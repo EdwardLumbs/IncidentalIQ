@@ -63,20 +63,91 @@ Endpoints:
 
 ---
 
-### AI — Groq (Free)
-Text classification model: llama-3.1-8b-instant. Image OCR and classification model: llama-3.2-11b-vision-preview. Approximately 48 API calls per day at 30-minute intervals, well within free tier.
+### AI — Groq (Free) — VALIDATED on real chat data
 
-Groq classification prompt:
-Given this message from a logistics group chat, determine if it discusses an incidental charge on a trip. If yes, extract the details. Return JSON only with these fields: is_incidental (bool), amount (float or null), incidental_type (string or null), trip_reference (string or null), confidence (float). Message: {message}
+**Status: PROVEN.** Tested against a real 274-message Taglish dispatch chat (TVL X BEST). Groq does genuine contextual understanding, not keyword matching — it catches implied incidentals with no charge word (e.g. "ang tagal nakatengga ng truck... wala pa pre advise" → overtime + demurrage) and correctly distinguishes incurred vs avoided ("to avoid Det charges" → possible, not confirmed).
+
+**Model decision:**
+- **Text classification: `openai/gpt-oss-120b`** (best judgment — ignores complaints/noise, confident on real incidentals) OR **`llama-3.3-70b-versatile`** (good, higher recall but more eager → flags borderline as "possible"). Both free. Do NOT use llama-3.1-8b-instant for classification — it misses nuance and over-flags (kept only as cheap overflow).
+- **Image OCR/classification: a current Groq vision model** — verify the exact id at build time via `GET /v1/models`; vision model names rotate frequently. Keep the model in an env var (`GROQ_MODEL`), never hardcode.
+- Endpoint is OpenAI-compatible: `POST https://api.groq.com/openai/v1/chat/completions`. Use `response_format: { type: "json_object" }` and `temperature: 0`.
+
+**Classification approach (see /test for the working reference implementation):**
+- The full rulebook lives in `docs/incidental-types.md` (21 incidental types). The code injects a CONDENSED copy (~1KB) into the system prompt on every call — Groq has no memory and cannot read files. Keep doc and prompt in sync (long-term: derive both from a `types.json`).
+- Each message is sent with the **previous ~5 messages as history** so the model can resolve WHICH trip an incidental belongs to when the message itself omits it.
+- **Output is an array** — one message can name multiple incidentals (e.g. "rented chassis because we had to bobtail" → chassis_rental + bobtail).
+- Each incidental carries a **status: `confirmed`** (cost actually incurred/happened) **or `possible`** (anticipated, at-risk, or being avoided). This is the key reliability lever: auto-trust `confirmed`, route `possible` to human review.
+- The peso AMOUNT does not matter and is usually absent — the goal is detecting that a trip HAS an incidental and its type, not the value.
+
+**Response schema:**
+```json
+{
+  "is_incidental": true,
+  "incidentals": [
+    { "incidental_type": "chassis_rental", "status": "confirmed", "confidence": 0.9 }
+  ],
+  "trip_reference": "TXGU5040257",
+  "reference_type": "container_number",
+  "reference_source": "message"
+}
+```
+
+**Reality found in real data:** incidental chatter is SPARSE (most messages are coordination noise) and almost always has NO amount — incidentals are discussed qualitatively. One trip accumulates multiple incidentals across many messages/days → aggregate by `trip_reference` at query time.
+
+### Groq free-tier limits — VERIFIED from response headers (per model, separate buckets)
+
+| Model | Requests/day | Tokens/min |
+|---|---|---|
+| llama-3.3-70b-versatile | 1,000 | 12,000 |
+| openai/gpt-oss-120b | 1,000 | 8,000 |
+| llama-3.1-8b-instant | 14,400 | 6,000 |
+
+- Limits are a continuously-refilling leaky bucket (NOT a reset). Each call draws ~1,100-1,200 tokens (the ~1KB rulebook dominates and is paid on EVERY call) + 1 request.
+- **USAGE = number of messages classified.** It does NOT depend on sync frequency or throttling — only message count. 1 message = 1 request.
+- **Per-minute (TPM) is the BURST bottleneck:** ~10 msgs/min on 70b, ~7 on 120b. Must THROTTLE batches (~6-9s between calls) or hit 429s. Throttle does not change usage, only pacing. The classifier already retries on 429.
+- **Per-day (RPD) is the VOLUME bottleneck:** 1,000/day on the smart models.
+- **Volume math (~100 classifiable msgs/day per chat):** 5 chats ≈ 500/day (safe), 7 chats ≈ 700/day (ok), 10 chats ≈ 1,000/day (at the cap).
+- **To safely run 8-10 chats:** (1) LOCAL pre-filter before calling Groq — skip job-sheet templates, reactions, images, "ok po" (~35% of messages); and/or (2) round-robin 70b + 120b for 2,000/day combined (free, separate buckets). Dedup notifications aggressively.
 
 ---
 
 ### Database — Cloudflare D1 (Free SQLite)
 
-Schema:
-CREATE TABLE captured_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT NOT NULL, group_name TEXT NOT NULL, sender TEXT NOT NULL, message TEXT, image_url TEXT, timestamp TEXT NOT NULL, is_incidental INTEGER DEFAULT 0, amount REAL, incidental_type TEXT, trip_reference TEXT, confidence REAL, raw_notif INTEGER DEFAULT 1, synced_at TEXT);
+NOTE: the original single-row design (one incidental_type/amount column per message) is REPLACED — a single message can carry MULTIPLE incidentals, so incidentals are a separate table (one row per detected incidental). Aggregate per trip by grouping `incidentals` on `trip_reference`. The `amount` column is kept but is usually NULL (amount doesn't matter for the use case).
 
-source is either 'viber' or 'messenger'. raw_notif is 1 if captured from notification, 0 if from accessibility service.
+```sql
+CREATE TABLE captured_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL,            -- 'viber' | 'messenger'
+  group_name TEXT NOT NULL,
+  sender TEXT,
+  message TEXT,
+  image_url TEXT,
+  timestamp TEXT NOT NULL,         -- ISO 8601 UTC
+  is_incidental INTEGER DEFAULT 0,
+  trip_reference TEXT,             -- container_number | consignee | plate | booking ref (may be inferred from history)
+  reference_type TEXT,             -- 'container_number' | 'consignee' | 'plate_number' | 'trip_id' | 'other'
+  reference_source TEXT,           -- 'message' | 'history' | null
+  raw_notif INTEGER DEFAULT 1,     -- 1 = from notification, 0 = from accessibility service
+  classified_at TEXT,
+  synced_at TEXT
+);
+
+CREATE TABLE incidentals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  message_id INTEGER NOT NULL REFERENCES captured_messages(id),
+  incidental_type TEXT NOT NULL,   -- one of the 21 keys in docs/incidental-types.md
+  status TEXT NOT NULL,            -- 'confirmed' | 'possible'
+  confidence REAL,
+  amount REAL,                     -- usually NULL
+  trip_reference TEXT              -- denormalized for fast GROUP BY per trip
+);
+
+CREATE INDEX idx_incidentals_trip ON incidentals(trip_reference);
+CREATE INDEX idx_msg_timestamp ON captured_messages(timestamp);
+```
+
+source is either 'viber' or 'messenger'. raw_notif is 1 if captured from notification, 0 if from accessibility service. Dedupe captured_messages by (source + group + sender + timestamp + content hash) before classifying — duplicate notifications waste requests.
 
 ---
 
@@ -111,7 +182,7 @@ source is either 'viber' or 'messenger'. raw_notif is 1 if captured from notific
 ## Cost
 - Cloudflare Workers: free
 - Cloudflare D1: free
-- Groq API: free
+- Groq API: free — VERIFIED stays within free tier up to ~7 chats outright, and 8-10 chats with local noise pre-filtering and/or round-robin across 70b+120b. Even if free limits were exceeded, Groq paid tier ≈ cents/day.
 - Android phone (used, one-time): 1500 to 3000 Philippine Pesos
 - Monthly ongoing cost: zero
 

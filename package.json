@@ -1,0 +1,9 @@
+{
+  "name": "incidentaliq",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:groq": "node test/run.mjs"
+  }
+}
