@@ -7,9 +7,9 @@
     "message": "EXPORT TVL TRUCKING SERVICES\nDRIVER: R.resilva\nHELPER: R Aquino\nPLATE NO: jaf9814\nDATE: 06-24-26\nCHASSIS#:tvl#10\nSIZE:1X40,\nCLIENT: song trading corp\nADDRESS: mercedes st cainta metro manila\nCNTR NO:txgu5040257\nSEAL NO:\nPort IN: 1057H 6/24/26\nPort OUT: 1400H 6/24/26\nPEZA IN:H\nPEZA OUT:\nARRIVAL: 1837H 6/24/26\nS.LOAD: H\nF.LOAD: H\nJOB COMP: H\nDEPARTURE: H\nRECEIVED:",
     "is_incidental": false,
     "incidentals": [],
-    "trip_reference": "TXGU5040257",
-    "reference_type": "container_number",
-    "reference_source": "message"
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
   },
   {
     "i": 2,
@@ -43,9 +43,9 @@
     "message": "di pa cguro tapos loading maam tinawagan ko driver di po nasagot..",
     "is_incidental": false,
     "incidentals": [],
-    "trip_reference": "TXGU5040257",
-    "reference_type": "container_number",
-    "reference_source": "history"
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
   },
   {
     "i": 5,
@@ -187,9 +187,9 @@
     "message": "Yung sa Song Trading natin hindi naunload",
     "is_incidental": false,
     "incidentals": [],
-    "trip_reference": "Song Trading",
-    "reference_type": "consignee",
-    "reference_source": "message"
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
   },
   {
     "i": 18,
@@ -201,8 +201,8 @@
     "incidentals": [
       {
         "incidental_type": "mano_fee",
-        "status": "confirmed",
-        "confidence": 0.95
+        "status": "possible",
+        "confidence": 0.8
       }
     ],
     "trip_reference": "Song Trading",
@@ -239,6 +239,126 @@
     "time": "08:14",
     "sender": "Emmz",
     "message": "Pls help to send picture asap for the container with gps dofirst export yesterday",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 23,
+    "date": "2026-06-25",
+    "time": "08:14",
+    "sender": "Victoria",
+    "message": "EXPORT TVL TRUCKING SERVICES\nDRIVER: R. DUMASIS\nHELPER: J CORDERO\nPLATE NO:NGR 7871\nDATE: 06-24-26\nCHASSIS#TUD 977\nSIZE:1X40, ONE HC\nCLIENT: DO FIRST\nADDRESS : 4PZA ROSARIO CAVITE\nCNTR NO: ONEU 5886670\nSEAL NO: PHAG 67514\nSEACON IN 1545\nSEACON OUT 1725\nPEZA IN:0825\nPEZA OUT: 6/24/26\nARRIVAL: 0830 6/24/26\nS.LOAD: 0900\nF.LOAD : 1420\nJOB COMP: 1600\nDEPARTURE: 1607\nRECEIVED:F.",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 24,
+    "date": "2026-06-25",
+    "time": "08:14",
+    "sender": "Emmz",
+    "message": "Nagate in n po b loaded mam",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 25,
+    "date": "2026-06-25",
+    "time": "09:29",
+    "sender": "Ronica",
+    "message": "yes po maam",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 27,
+    "date": "2026-06-25",
+    "time": "10:24",
+    "sender": "Victoria",
+    "message": "good morning everyone.... ano ang next trip ng ating mga truck pambukas?",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 28,
+    "date": "2026-06-25",
+    "time": "10:24",
+    "sender": "James (성환)",
+    "message": "ms vic good morning!",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 29,
+    "date": "2026-06-25",
+    "time": "10:24",
+    "sender": "James (성환)",
+    "message": "we will let you know asap!",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 30,
+    "date": "2026-06-25",
+    "time": "10:24",
+    "sender": "Victoria",
+    "message": "Noted sir",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 31,
+    "date": "2026-06-25",
+    "time": "10:24",
+    "sender": "Victoria",
+    "message": "But how about the empty from Song Trading, can we just reuse it or need to pre advise",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 32,
+    "date": "2026-06-25",
+    "time": "10:24",
+    "sender": "Victoria",
+    "message": "Just done unloading now..",
+    "is_incidental": false,
+    "incidentals": [],
+    "trip_reference": null,
+    "reference_type": null,
+    "reference_source": null
+  },
+  {
+    "i": 33,
+    "date": "2026-06-25",
+    "time": "10:24",
+    "sender": "James (성환)",
+    "message": "we will let you know",
     "is_incidental": false,
     "incidentals": [],
     "trip_reference": null,

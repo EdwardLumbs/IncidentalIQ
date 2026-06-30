@@ -20,6 +20,14 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.btnToggleMonitor.setOnClickListener {
+            val next = !Monitoring.isEnabled(this)
+            Monitoring.setEnabled(this, next)
+            log(if (next) "Monitoring ON — capturing messages" else "Monitoring OFF — not saving anything")
+            refreshMonitorButton()
+        }
+        refreshMonitorButton()
+
         binding.btnStartService.setOnClickListener {
             startForegroundService(Intent(this, MonitorForegroundService::class.java))
             log("Foreground service started")
@@ -46,6 +54,11 @@ class MainActivity : AppCompatActivity() {
         checkPermissions()
     }
 
+    private fun refreshMonitorButton() {
+        val on = Monitoring.isEnabled(this)
+        binding.btnToggleMonitor.text = if (on) "MONITORING: ON  (tap to stop)" else "MONITORING: OFF  (tap to start)"
+    }
+
     private fun checkPermissions() {
         val nlEnabled = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
             ?.contains(packageName) == true
@@ -63,7 +76,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun log(msg: String) {
         binding.tvLog.append("[${sdf.format(Date())}] $msg\n")
+        // Keep only the most recent lines on screen so the view doesn't grow forever.
+        val text = binding.tvLog.text
+        val lines = text.count { it == '\n' }
+        if (lines > MAX_UI_LINES) {
+            var idx = 0
+            var toDrop = lines - KEEP_UI_LINES   // drop the oldest lines
+            while (toDrop-- > 0) idx = text.indexOf('\n', idx) + 1
+            binding.tvLog.text = text.subSequence(idx, text.length)
+        }
         binding.scrollLog.post { binding.scrollLog.fullScroll(ScrollView.FOCUS_DOWN) }
+    }
+
+    companion object {
+        private const val MAX_UI_LINES = 500   // trim the on-screen log once it passes this
+        private const val KEEP_UI_LINES = 300  // …down to this many most-recent lines
     }
 
     override fun onDestroy() {

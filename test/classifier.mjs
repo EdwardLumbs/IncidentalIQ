@@ -29,7 +29,10 @@ export const INCIDENTAL_TYPES = [
 
 const TYPE_KEYS = INCIDENTAL_TYPES.map(([k]) => k);
 
-export function buildSystemPrompt() {
+// The shared rulebook — goal, confirmed/possible logic, the type list, rules, and how to
+// resolve a trip reference (incl. the driver/helper sender hint). Both the single-message
+// and batch prompts inject this verbatim; only the OUTPUT-FORMAT section differs.
+function buildRulebook() {
   const typeLines = INCIDENTAL_TYPES.map(([k, d]) => `  ${k} - ${d}`).join("\n");
   return `You read messages from a Philippine container-trucking group chat (Taglish: mixed
 Tagalog/English, with shorthand and typos). Most messages are routine operations.
@@ -69,6 +72,19 @@ TRIP REFERENCE: the incidentals in a message almost always belong to ONE trip, i
 container_number (e.g. TXGU5040257), consignee/client name, plate_number, or booking/trip ref. The
 message often omits it — infer from the recent chat history. Use null if you truly cannot tell.
 
+USING THE SENDER: every trip is assigned to a specific DRIVER and HELPER (their names appear on the
+job-sheet/dispatch slip for that trip, e.g. "Driver R. Ando / Helper M. Meridor"). The person who
+posts a message is usually the driver or helper working that trip and reporting from the field. So
+when a message omits the trip reference, use the SENDER to help link it: match the sender to the
+driver/helper named on a recent job sheet in the history, and attribute the incidental to that
+trip's container/plate. The sender is a hint, not proof — sender names (chat account names) may not
+exactly match the job-sheet driver/helper names, so only link when it's a reasonable match.`;
+}
+
+// Single-message prompt (one message in, one object out). Kept for ad-hoc/debug use.
+export function buildSystemPrompt() {
+  return `${buildRulebook()}
+
 Return ONLY a JSON object with exactly these fields:
 {
   "is_incidental": boolean,             // true iff incidentals[] is non-empty
@@ -85,6 +101,35 @@ Return ONLY a JSON object with exactly these fields:
 }`;
 }
 
+// Batch prompt — many messages in, an array of per-message results out. This is the
+// production path: one Groq call classifies a whole chat's worth of new messages, paying
+// the rulebook cost once and giving the model the full conversation as context.
+export function buildBatchSystemPrompt() {
+  return `${buildRulebook()}
+
+You will be given a numbered batch of messages from ONE chat (newest context last). Classify
+EACH message. Messages are mostly routine — incidentals are SPARSE.
+
+OUTPUT: return ONLY a JSON object { "results": [ ... ] }. Put one entry in results for EACH
+message that contains at least one incidental. OMIT messages that have no incidental (do not
+emit empty entries for them). Every entry MUST echo back the exact "id" given for that message
+so it can be matched. Each entry:
+{
+  "id": string,                         // the [id] of the message, copied exactly
+  "incidentals": [                      // 1+ items (an entry only exists if it has incidentals)
+    {
+      "incidental_type": string,        // one of the keys above
+      "status": "confirmed" | "possible",
+      "confidence": number              // 0.0-1.0
+    }
+  ],
+  "trip_reference": string | null,      // identifier VALUE, e.g. "TXGU5040257" or "Nutri Asia"
+  "reference_type": string | null,      // "container_number" | "consignee" | "plate_number" | "trip_id" | "other"
+  "reference_source": string | null     // "message" | "history" | null
+}
+If NO message in the batch has an incidental, return { "results": [] }.`;
+}
+
 function buildUserPrompt({ history = [], sender, message }) {
   let out = "";
   if (history.length) {
@@ -94,6 +139,20 @@ function buildUserPrompt({ history = [], sender, message }) {
   }
   out += "Classify THIS message:\n";
   out += `${sender ?? "unknown"}: ${message}`;
+  return out;
+}
+
+// Batch user prompt. `context` = earlier messages for reference only (not classified);
+// `messages` = [{ id, sender, content }] to classify, each tagged with its id.
+function buildBatchUserPrompt({ context = [], messages }) {
+  let out = "";
+  if (context.length) {
+    out += "CONTEXT (earlier messages, for reference only — DO NOT classify these):\n";
+    for (const c of context) out += `${c.sender ?? "unknown"}: ${c.message}\n`;
+    out += "\n";
+  }
+  out += "MESSAGES TO CLASSIFY (format = [id] sender: message):\n";
+  for (const m of messages) out += `[${m.id}] ${m.sender ?? "unknown"}: ${m.content}\n`;
   return out;
 }
 
@@ -117,20 +176,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // log() prints only when verbose is on. Tagged so output is easy to scan.
 const log = (verbose, ...args) => { if (verbose) console.log(...args); };
 
-export async function classify({ apiKey, model, history, sender, message, maxRetries = 4, verbose = false }) {
-  const systemPrompt = buildSystemPrompt();
-  const userPrompt = buildUserPrompt({ history, sender, message });
-
+// Shared Groq call: POST with JSON mode + temp 0, retry on 429 using the wait Groq tells us,
+// parse the JSON content (tolerating code fences), and return parsed + token/quota meta.
+async function callGroq({ apiKey, model, systemPrompt, userPrompt, maxRetries = 4, verbose = false }) {
   log(verbose, "  ── REQUEST ─────────────────────────────────────────");
   log(verbose, `  model: ${model}  temp: 0  json_mode: on`);
-  log(verbose, `  system prompt: ${systemPrompt.length} chars`);
-  if (history?.length) {
-    log(verbose, `  history (${history.length} msgs):`);
-    for (const h of history) log(verbose, `     · ${h.sender}: ${h.message}`);
-  } else {
-    log(verbose, "  history: (none)");
-  }
-  log(verbose, `  TARGET → ${sender ?? "unknown"}: ${message}`);
+  log(verbose, `  system prompt: ${systemPrompt.length} chars  | user prompt: ${userPrompt.length} chars`);
 
   const reqStart = Date.now();
   let res;
@@ -198,23 +249,69 @@ export async function classify({ apiKey, model, history, sender, message, maxRet
   try {
     parsed = JSON.parse(content);
   } catch {
-    // strip code fences if the model wrapped it
     log(verbose, "  ⚠ direct JSON.parse failed, stripping code fences and retrying");
-    const cleaned = content.replace(/```json|```/g, "").trim();
-    parsed = JSON.parse(cleaned);
+    parsed = JSON.parse(content.replace(/```json|```/g, "").trim());
   }
 
-  // light validation — flag any unknown type keys in the array
-  const items = Array.isArray(parsed.incidentals) ? parsed.incidentals : [];
-  const unknown = items.map((x) => x?.incidental_type).filter((t) => t && !TYPE_KEYS.includes(t));
+  return { parsed, meta: { latencyMs: Date.now() - reqStart, usage: data.usage ?? null, rateLimit: rl } };
+}
+
+// flag any unknown type keys across a list of incidental items
+function warnUnknownTypes(items, parsed, verbose) {
+  const unknown = (items ?? []).map((x) => x?.incidental_type).filter((t) => t && !TYPE_KEYS.includes(t));
   if (unknown.length) {
     parsed._warning = `unknown incidental_type(s): ${unknown.join(", ")}`;
     log(verbose, `  ⚠ ${parsed._warning}`);
   }
+}
 
-  // attach meta for callers that want it
-  parsed._meta = { latencyMs: Date.now() - reqStart, usage: data.usage ?? null, rateLimit: rl };
+// Single message in, one classification object out. Kept for ad-hoc/debug use.
+export async function classify({ apiKey, model, history, sender, message, maxRetries = 4, verbose = false }) {
+  if (history?.length) { log(verbose, `  history (${history.length} msgs):`); for (const h of history) log(verbose, `     · ${h.sender}: ${h.message}`); }
+  log(verbose, `  TARGET → ${sender ?? "unknown"}: ${message}`);
+
+  const { parsed, meta } = await callGroq({
+    apiKey, model, maxRetries, verbose,
+    systemPrompt: buildSystemPrompt(),
+    userPrompt: buildUserPrompt({ history, sender, message }),
+  });
+
+  warnUnknownTypes(parsed.incidentals, parsed, verbose);
+  parsed._meta = meta;
   return parsed;
+}
+
+// Batch of messages from ONE chat in, array of per-message results out (production path).
+// `messages` = [{ id, sender, content }]; `context` = [{ sender, message }] for reference only.
+// Returns { results: [{ id, incidentals, trip_reference, reference_type, reference_source }], _meta }.
+// Results are filtered to ids that were actually in the batch, so a stray/hallucinated id is dropped.
+export async function classifyBatch({ apiKey, model, context = [], messages, maxRetries = 4, verbose = false }) {
+  if (!messages?.length) return { results: [], _meta: null };
+  log(verbose, `  BATCH → ${messages.length} message(s), ${context.length} context msg(s)`);
+
+  const { parsed, meta } = await callGroq({
+    apiKey, model, maxRetries, verbose,
+    systemPrompt: buildBatchSystemPrompt(),
+    userPrompt: buildBatchUserPrompt({ context, messages }),
+  });
+
+  const validIds = new Set(messages.map((m) => String(m.id)));
+  const raw = Array.isArray(parsed.results) ? parsed.results : [];
+  const results = raw
+    .filter((r) => r && validIds.has(String(r.id)))
+    .map((r) => ({
+      id: String(r.id),
+      incidentals: Array.isArray(r.incidentals) ? r.incidentals : [],
+      trip_reference: r.trip_reference ?? null,
+      reference_type: r.reference_type ?? null,
+      reference_source: r.reference_source ?? null,
+    }));
+
+  const dropped = raw.length - results.length;
+  if (dropped > 0) log(verbose, `  ⚠ dropped ${dropped} result(s) with unknown/missing id`);
+  warnUnknownTypes(results.flatMap((r) => r.incidentals), parsed, verbose);
+
+  return { results, _meta: meta };
 }
 
 export { TYPE_KEYS };

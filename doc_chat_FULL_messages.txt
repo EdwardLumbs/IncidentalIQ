@@ -1,0 +1,719 @@
+﻿══════════════════════════════════════════════════
+[2026-06-29T23:53:38] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+Seconds to play rebook sana 😪 nakapag pa verify napo Ako ma'am
+══════════════════════════════════════════════════
+[2026-06-29T23:54:15] via=ACCESSIBILITY  is_image=False
+sender: Manuelito
+content:
+Import  TVLtucking  Services    Date:06-29-26 Zise#1x40 Chassis:#01 Driver R. Ando Helper M. Meridor  Ctnr#CAAU6449507 Seal#ARLA172525 client:ARLA  Address:822 Quirino hwy. Novaliches Quezon city metro Manila   Mip in:1814H Mip out:1848H...
+══════════════════════════════════════════════════
+[2026-06-29T23:54:15] via=ACCESSIBILITY  is_image=False
+sender: Jasheim
+content:
+Seconds to play rebook sana 😪 nakapag pa verify napo Ako ma'am
+══════════════════════════════════════════════════
+[2026-06-29T23:54:16] via=ACCESSIBILITY  is_image=False
+sender: Manuelito
+content:
+Import 
+TVLtucking 
+Services 
+
+
+Date:06-29-26
+Zise#1x40
+Chassis:#01
+Driver R. Ando
+Helper M. Meridor
+
+Ctnr#CAAU6449507
+Seal#ARLA172525
+client:ARLA
+
+Address:822 Quirino hwy. Novaliches Quezon city metro Manila 
+
+Mip in:1814H
+Mip out:1848H
+
+
+Arrival:2155H 06-29-26
+S unloading:2353H 06-29-26
+F unloading:
+Jobcom:
+Departure:
+Receive:
+══════════════════════════════════════════════════
+[2026-06-30T00:47:28] via=ACCESSIBILITY  is_image=False
+sender: Manuelito
+content:
+Import 
+TVLtucking 
+Services 
+
+
+Date:06-29-26
+Zise#1x40
+Chassis:#01
+Driver R. Ando
+Helper M. Meridor
+
+Ctnr#CAAU6449507
+Seal#ARLA172525
+client:ARLA
+
+Address:822 Quirino hwy. Novaliches Quezon city metro Manila 
+
+Mip in:1814H
+Mip out:1848H
+
+
+Arrival:2155H 06-29-26
+S unloading:2353H 06-29-26
+F unloading:0017H 06-30-26
+Jobcom:0040H 06-30-26
+Departure:0047H 06-30-26
+══════════════════════════════════════════════════
+[2026-06-30T00:54:35] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+Haba ho ng pila sa PRLI manila back to back ho hanggang sa kabilang kalsasA @Manuelito Meridor kaw na bahala mag picture sa endorcer tong di klaro yong picture ko andito pa sya hanggang ngayon yong malaki ang tyan kaninang hapon pa to sya
+══════════════════════════════════════════════════
+[2026-06-30T01:33:30] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate to TVL DOCUMENTATION / REPORTING6(p99
+content:
+Sira Pa po Ang Crane Dito Sa Brightpoint
+══════════════════════════════════════════════════
+[2026-06-30T01:41:24] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+yare Nanaman Sa Parking Exceed
+══════════════════════════════════════════════════
+[2026-06-30T01:43:15] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Manuelito Meridor
+content:
+12 pah ng tanghali booking nmin Kya bahala ka jn hehehe
+══════════════════════════════════════════════════
+[2026-06-30T01:50:34] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+Tapos napo kame sauli NCT ma'am
+══════════════════════════════════════════════════
+[2026-06-30T01:59:09] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Ok na videohan na ni ancel
+══════════════════════════════════════════════════
+[2026-06-30T02:44:23] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Joshua Quidato
+content:
+NGT9149 gate in mio
+══════════════════════════════════════════════════
+[2026-06-30T04:18:49] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Out na po si cap7500 sa PRLI manila
+══════════════════════════════════════════════════
+[2026-06-30T04:19:28] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+Sent a photo.
+══════════════════════════════════════════════════
+[2026-06-30T04:19:59] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+ibaba Nalang Po Empty NBS
+══════════════════════════════════════════════════
+[2026-06-30T04:36:13] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Docs po ng rigging sa harbor mam sir di ho kmi papasokin
+══════════════════════════════════════════════════
+[2026-06-30T04:48:44] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Pina atras din po ang truck ng rigging mam wala man sila pinakitang docs
+══════════════════════════════════════════════════
+[2026-06-30T04:50:18] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Sent a video.
+══════════════════════════════════════════════════
+[2026-06-30T04:52:16] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+Waitaing ho kami sa labas ng harboor mam di kami pinapasok paki pa low up po mam and sir antok na po kami
+══════════════════════════════════════════════════
+[2026-06-30T05:45:17] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+Andito parin po kmi sa labas ng harbor nag hihintay kong sino po ang mag bigay sa amin ng dokomento papasok sa harbor at kong ano ang number ng selyo
+══════════════════════════════════════════════════
+[2026-06-30T06:00:26] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+Nasa labas ho kami ng harbor sino ang makapag bigay sa inyo ng container number at ng selyo kanina pa po kami dito nasa highway kasi kami anu mang oras my buwaya na darating
+══════════════════════════════════════════════════
+[2026-06-30T06:00:26] via=ACCESSIBILITY  is_image=True
+sender: Cel Ed
+content:
+[image]
+══════════════════════════════════════════════════
+[2026-06-30T06:00:45] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Sent a photo.
+══════════════════════════════════════════════════
+[2026-06-30T06:23:39] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+Nakapasok napo CBB
+══════════════════════════════════════════════════
+[2026-06-30T06:26:55] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+To yong binigay mo ayaw tanggapin ng guard 😀😀 binasa nya nilagyan ko na ng 200 daan ayaw parin
+══════════════════════════════════════════════════
+[2026-06-30T06:26:55] via=ACCESSIBILITY  is_image=False
+sender: Jasheim
+content:
+Nakapasok napo CBB
+══════════════════════════════════════════════════
+[2026-06-30T06:28:25] via=ACCESSIBILITY  is_image=False
+sender: Jasheim
+content:
+Pasok ka saloob punta ka office ng rigging then pagawa ka ng bagong request latr para makapasok ka
+══════════════════════════════════════════════════
+[2026-06-30T06:28:52] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+Call mo nalang may number Naman Ako don...
+══════════════════════════════════════════════════
+[2026-06-30T06:29:46] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Paki pasa tolog kasi driver ko pina iglip ko sandali kawawa naman to
+══════════════════════════════════════════════════
+[2026-06-30T06:32:52] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Cel changed the theme to Backrooms 🪑
+══════════════════════════════════════════════════
+[2026-06-30T06:40:40] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+🪑
+══════════════════════════════════════════════════
+[2026-06-30T07:44:45] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Cel changed the theme using AI to "pool tvl name" 👍.
+══════════════════════════════════════════════════
+[2026-06-30T07:58:42] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+@Jhoseph D. Ariate need Pala ng damit na TVL sa NUTRIASIA???
+══════════════════════════════════════════════════
+[2026-06-30T08:00:33] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+oo O Kaya White Na TShirt
+══════════════════════════════════════════════════
+[2026-06-30T08:00:41] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+Norem ka?
+══════════════════════════════════════════════════
+[2026-06-30T08:01:02] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+meron dilaw
+══════════════════════════════════════════════════
+[2026-06-30T08:01:20] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+TVL?
+══════════════════════════════════════════════════
+[2026-06-30T08:01:42] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+TVL kahit Plain white Pwede
+══════════════════════════════════════════════════
+[2026-06-30T08:03:07] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+Driver meron plain tshirts Yun pag Wala bilhan ko punta Ako dvisoria
+══════════════════════════════════════════════════
+[2026-06-30T08:06:48] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+Guys bagong number ni kuya Buboy save nyo nalang 09278186890
+══════════════════════════════════════════════════
+[2026-06-30T09:03:18] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Joshua Quidato
+content:
+NGT9149 out mip otw SMIP
+══════════════════════════════════════════════════
+[2026-06-30T09:04:10] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Ronica Dacer
+content:
+👍
+══════════════════════════════════════════════════
+[2026-06-30T09:06:42] via=ACCESSIBILITY  is_image=False
+sender: Ronica
+content:
+@Jhoseph D. Ariate@Jasheim Escaño Rubio Pagnatanggalan na kayo mmya ng selyo pasend agad picture ng labas para mapreadvise ko na agad pasend ndin ng DO ha
+══════════════════════════════════════════════════
+[2026-06-30T09:06:42] via=ACCESSIBILITY  is_image=False
+sender: Joshua
+content:
+NGT9149 out mip otw SMIP
+══════════════════════════════════════════════════
+[2026-06-30T09:06:42] via=ACCESSIBILITY  is_image=False
+sender: Victoria
+content:
+Guys bagong number ni kuya Buboy save nyo nalang 09278186890
+══════════════════════════════════════════════════
+[2026-06-30T09:07:21] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+👍
+══════════════════════════════════════════════════
+[2026-06-30T09:12:47] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+@Jhoseph D. Ariate dame enforcer DOL MTPB MMDA south slex na siguro kame mag antay sainyo DOL
+══════════════════════════════════════════════════
+[2026-06-30T09:13:04] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+sige dol
+══════════════════════════════════════════════════
+[2026-06-30T09:15:46] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Ronica Dacer
+content:
+una na kayo @Jasheim Escaño Rubio hindi pa nakakapasok truck ni NBS
+══════════════════════════════════════════════════
+[2026-06-30T09:21:44] via=ACCESSIBILITY  is_image=False
+sender: Jasheim
+content:
+IMPORT: LOADED MIP TVL TRUCKING SERVICES  DRIVER:R. RUBIO  HELPER:J. RUBIO PLATE NO:CBB4966 DATE: 06-30-26 CHASSIS#:TVL06  CNTR#:HALU2341835 SEAL#:022276 S.LINE:SNK Size:1×20  CLIENT:NUTRI ASIA INC  ADRRESS;LISP1 CABUYAO LAGUNA  MIP IN:0644H 06-30...
+══════════════════════════════════════════════════
+[2026-06-30T09:21:44] via=ACCESSIBILITY  is_image=False
+sender: Ronica
+content:
+una na kayo @Jasheim Escaño Rubio hindi pa nakakapasok truck ni NBS
+══════════════════════════════════════════════════
+[2026-06-30T09:21:45] via=ACCESSIBILITY  is_image=False
+sender: Jasheim
+content:
+IMPORT: LOADED MIP
+TVL TRUCKING SERVICES
+
+DRIVER:R. RUBIO 
+HELPER:J. RUBIO
+PLATE NO:CBB4966
+DATE: 06-30-26
+CHASSIS#:TVL06
+
+CNTR#:HALU2341835
+SEAL#:022276
+S.LINE:SNK
+Size:1×20
+
+CLIENT:NUTRI ASIA INC
+
+ADRRESS;LISP1 CABUYAO LAGUNA
+
+MIP IN:0644H 06-30
+MIP OUT:0720H 06-30
+
+ARRIVAL:
+S. UNLOAD:
+F.UNLOAD:
+JOB COMP:
+DEPARTURE:
+RECEIVE:
+══════════════════════════════════════════════════
+[2026-06-30T10:03:55] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+MIP out otw Napo Warehouse
+══════════════════════════════════════════════════
+[2026-06-30T10:05:15] via=ACCESSIBILITY  is_image=False
+sender: Jhoseph
+content:
+IMPORT: LOADED MIP
+TVL TRUCKING SERVICES
+
+DRIVER:R. RUBIO 
+HELPER:J. RUBIO
+PLATE NO:CBB4966
+DATE: 06-30-26
+CHASSIS#:TVL06
+
+CNTR#:HALU2342196
+SEAL#:022318
+S.LINE:SNK
+Size:1×20
+
+CLIENT:NUTRI ASIA INC
+
+ADRRESS;LISP1 CABUYAO LAGUNA
+
+MIP IN:08:20H
+MIP OUT:10:04H
+
+ARRIVAL:
+S. UNLOAD:
+F.UNLOAD:
+JOB COMP:
+DEPARTURE:
+RECEIVE:
+══════════════════════════════════════════════════
+[2026-06-30T11:15:46] via=ACCESSIBILITY  is_image=False
+sender: Jasheim
+content:
+IMPORT: LOADED MIP
+TVL TRUCKING SERVICES
+
+DRIVER:R. RUBIO 
+HELPER:J. RUBIO
+PLATE NO:CBB4966
+DATE: 06-30-26
+CHASSIS#:TVL06
+
+CNTR#:HALU2341835
+SEAL#:022276
+S.LINE:SNK
+Size:1×20
+
+CLIENT:NUTRI ASIA INC
+
+ADRRESS;LISP1 CABUYAO LAGUNA
+
+MIP IN:0644H 06-30
+MIP OUT:0720H 06-30
+
+ARRIVAL:1115H 06-30
+S. UNLOAD:
+F.UNLOAD:
+JOB COMP:
+DEPARTURE:
+RECEIVE:
+══════════════════════════════════════════════════
+[2026-06-30T11:18:48] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: It's Me King
+content:
+Sent a photo.
+══════════════════════════════════════════════════
+[2026-06-30T11:19:30] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+Pang ilan kayo? Wala pang unloading na nagaganap dyan?
+══════════════════════════════════════════════════
+[2026-06-30T11:49:24] via=ACCESSIBILITY  is_image=False
+sender: Jhoseph
+content:
+IMPORT: LOADED MIP TVL TRUCKING SERVICES  DRIVER:B pardillo HELPER:J ariate PLATE NO:CBB4966 DATE: 06-30-26 CHASSIS#:TVL07  CNTR#:HALU2342196 SEAL#:022318 S.LINE:SNK Size:1×20  CLIENT:NUTRI ASIA INC  ADRRESS;LISP1 CABUYAO LAGUNA  MIP IN:08:20H MIP...
+══════════════════════════════════════════════════
+[2026-06-30T11:49:24] via=ACCESSIBILITY  is_image=False
+sender: Victoria
+content:
+Pang ilan kayo? Wala pang unloading na nagaganap dyan?
+══════════════════════════════════════════════════
+[2026-06-30T11:49:25] via=ACCESSIBILITY  is_image=False
+sender: Jhoseph
+content:
+IMPORT: LOADED MIP
+TVL TRUCKING SERVICES
+
+DRIVER:B pardillo
+HELPER:J ariate
+PLATE NO:CBB4966
+DATE: 06-30-26
+CHASSIS#:TVL07
+
+CNTR#:HALU2342196
+SEAL#:022318
+S.LINE:SNK
+Size:1×20
+
+CLIENT:NUTRI ASIA INC
+
+ADRRESS;LISP1 CABUYAO LAGUNA
+
+MIP IN:08:20H
+MIP OUT:10:04H
+
+ARRIVAL:11:45H
+S. UNLOAD:
+F.UNLOAD:
+JOB COMP:
+DEPARTURE:
+RECEIVE:
+══════════════════════════════════════════════════
+[2026-06-30T11:56:57] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+dipa Po Kame Pinapapasok Nag Checheck pa Mg Buhok Bago Mag Papasok sa Loob
+══════════════════════════════════════════════════
+[2026-06-30T11:58:43] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Manuelito Meridor
+content:
+Naka pila napo CBR papasok one stop
+══════════════════════════════════════════════════
+[2026-06-30T11:58:53] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Manuelito Meridor
+content:
+Sent a photo.
+══════════════════════════════════════════════════
+[2026-06-30T13:41:46] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+guys pa update ng status ninyo
+══════════════════════════════════════════════════
+[2026-06-30T13:42:34] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+ano chenecheck kung may kuto kayo ganun?
+══════════════════════════════════════════════════
+[2026-06-30T14:21:35] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+Kung Papasa Daw sa haba Mam May Barbero Ata sila Dito
+══════════════════════════════════════════════════
+[2026-06-30T14:32:17] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Manuelito Meridor
+content:
+Naka naka labs napo CBR PRLI
+══════════════════════════════════════════════════
+[2026-06-30T14:34:29] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+tawa ka dyan, baka mamaya pagd ka pumasa d ka papasukin
+══════════════════════════════════════════════════
+[2026-06-30T14:35:03] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Jhoseph D. Ariate
+content:
+maiksi Buhok Ko Ngayon Mam Kaka Pagupit Lang Po
+══════════════════════════════════════════════════
+[2026-06-30T14:35:14] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+mabuti naman hehe
+══════════════════════════════════════════════════
+[2026-06-30T14:38:27] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Manuelito Meridor
+content:
+Otw napo CBR garahe
+══════════════════════════════════════════════════
+[2026-06-30T15:36:43] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+On the way na po sa 0paran.. pa process po ng gate pass mam salamat
+══════════════════════════════════════════════════
+[2026-06-30T15:37:49] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+Wait yung selyo nakuha mo ba?
+══════════════════════════════════════════════════
+[2026-06-30T15:37:56] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+Nakapasok na ba si MAT4846?
+══════════════════════════════════════════════════
+[2026-06-30T15:39:57] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Sent 2 photos.
+══════════════════════════════════════════════════
+[2026-06-30T15:40:53] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Sent 5 photos.
+══════════════════════════════════════════════════
+[2026-06-30T15:43:02] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+Sent 2 photos.
+══════════════════════════════════════════════════
+[2026-06-30T15:43:02] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+Sent 5 photos.
+══════════════════════════════════════════════════
+[2026-06-30T15:43:02] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+Di pa po nadating yong aproval ni mat mam kulang ho yong id  ng pahinante nya yon nlang kulang kay mat
+══════════════════════════════════════════════════
+[2026-06-30T15:43:02] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+On the way na po sa 0paran.. pa process po ng gate pass mam salamat
+══════════════════════════════════════════════════
+[2026-06-30T15:43:02] via=ACCESSIBILITY  is_image=False
+sender: Victoria
+content:
+Wait yung selyo nakuha mo ba?
+══════════════════════════════════════════════════
+[2026-06-30T15:43:02] via=ACCESSIBILITY  is_image=False
+sender: Victoria
+content:
+Nakapasok na ba si MAT4846?
+══════════════════════════════════════════════════
+[2026-06-30T17:02:42] via=ACCESSIBILITY  is_image=False
+sender: Joshua
+content:
+TVL TRUCKING SERVICES
+IMPORT LOADED MIP
+ROYAL CARGO
+
+DRIVER: DANTE IRASGA
+HELPER: IKE QUIDATO
+PLATE NO.: NGT9149
+CHASSI NO.; TVL #10
+DATE: 06-30-26
+CONT. NO.: CAAU8316397
+SEAL NO.: CN8350711
+SIZE: 1×40 /MSK
+
+CLIENT: EVERGREEN ENVIRONMENTAL RESOURCES INC.
+ADDRESS: SMIP STA. MARIA BULACAN
+
+MIP IN: 0244H
+MIP OUT: 0903H
+
+PEZA IN: 1320H
+PEZA OUT: 1325H
+
+WHSE. ARRIVAL: 1340
+S- UNLOAD: 1415H
+F- UNLOAD: 1616H
+JOB. COMP.: 1635H
+DEPARTURE: AFTER TRUCKBAN
+RECEIVED BY: JESS GULLEN
+══════════════════════════════════════════════════
+[2026-06-30T17:02:51] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Joshua Quidato
+content:
+Sent 2 photos.
+══════════════════════════════════════════════════
+[2026-06-30T17:05:28] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Mam gate pass po nsa labas napo kmi ng gate sa oparan
+══════════════════════════════════════════════════
+[2026-06-30T17:10:07] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+Send ka.arrival para alam na nandyan na kayo
+══════════════════════════════════════════════════
+[2026-06-30T17:33:42] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Mam inareglo ko nalang po yong sa gate pass 50 po andito na po kami sa oparan
+══════════════════════════════════════════════════
+[2026-06-30T17:33:55] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+👍
+══════════════════════════════════════════════════
+[2026-06-30T17:39:13] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Sent 3 photos.
+══════════════════════════════════════════════════
+[2026-06-30T17:39:32] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Start loading na po si cap
+══════════════════════════════════════════════════
+[2026-06-30T17:43:40] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Victoria Ronquillo Lumbao
+content:
+@Cel Ed nasaan arrival mo?
+══════════════════════════════════════════════════
+[2026-06-30T17:50:24] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+Wait lang po mam
+══════════════════════════════════════════════════
+[2026-06-30T18:13:10] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+EXPORT TVL TRUCKING  DATE:06/30/26 SHIPPING LINE:ONE OCEAN  DRIVER:ANCEL REMO HELPER:EDCEL PRINCESA  PLATE#:CAP7500 CONTAINER#: TGBU4580601  SEAL#:KSC622065 CHASSIS #:TVL#12  DELIVERY ADDRESS:LOT 1& 5 WAREHOUSE 2 & 3 FILINVEST TECHNOPARK BRGY PUNTA...
+══════════════════════════════════════════════════
+[2026-06-30T18:13:11] via=ACCESSIBILITY  is_image=False
+sender: Cel
+content:
+EXPORT
+TVL TRUCKING
+
+DATE:06/30/26
+SHIPPING LINE:ONE OCEAN
+
+DRIVER:ANCEL REMO
+HELPER:EDCEL PRINCESA
+
+PLATE#:CAP7500
+CONTAINER#:
+TGBU4580601
+
+SEAL#:KSC622065
+CHASSIS #:TVL#12
+
+DELIVERY ADDRESS:LOT 1& 5 WAREHOUSE 2 & 3 FILINVEST TECHNOPARK BRGY PUNTA CALAMBA CITY LAGUNA
+
+CY IN:1440H 06-30-26
+CY OUT:1500Hv06-30-26
+
+ARRIVAL:
+1715H 06-30-26
+
+START UNLOAD:
+1730H 06-30-26
+
+FINISH UNLOAD
+
+JOBCOMPLATE:
+DEPARTURE:
+══════════════════════════════════════════════════
+[2026-06-30T18:58:44] via=NOTIFICATION  is_image=False
+sender: TVL DOCUMENTATION / REPORTING6(p99: Cel Ed
+content:
+1852H finish loading waitaing docs and gps si CAP7500
+══════════════════════════════════════════════════
+[2026-06-30T19:23:27] via=ACCESSIBILITY  is_image=False
+sender: Jasheim
+content:
+IMPORT: LOADED MIP
+TVL TRUCKING SERVICES
+
+DRIVER:R. RUBIO 
+HELPER:J. RUBIO
+PLATE NO:CBB4966
+DATE: 06-30-26
+CHASSIS#:TVL06
+
+CNTR#:HALU2341835
+SEAL#:022276
+S.LINE:SNK
+Size:1×20
+
+CLIENT:NUTRI ASIA INC
+
+ADRRESS;LISP1 CABUYAO LAGUNA
+
+MIP IN:0644H 06-30
+MIP OUT:0720H 06-30
+
+ARRIVAL:1115H 06-30
+S. UNLOAD:1920H 06-30
+F.UNLOAD:
+JOB COMP:
+DEPARTURE:
+RECEIVE:
+

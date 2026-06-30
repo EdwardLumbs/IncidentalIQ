@@ -2,37 +2,43 @@ package com.tvl.incidentaliq
 
 import android.app.KeyguardManager
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import android.os.PowerManager
 
+/**
+ * Wakes the screen for an accessibility read cycle. The coordinator holds the
+ * lock for the whole cycle, then releases it (screen times out naturally).
+ * Requires the phone to have NO PIN (dedicated device) so the lock screen
+ * doesn't block the launched app.
+ */
 object WakeLockHelper {
     private const val TAG = "WAKE"
-    private const val WAKE_DURATION = 5000L
+    private var wl: PowerManager.WakeLock? = null
 
     @Suppress("DEPRECATION")
-    fun wake(context: Context) {
-        AppLog.write(TAG, "WakeLock requested")
-
-        val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-        val wl = pm.newWakeLock(
+    fun acquire(ctx: Context, timeoutMs: Long = 60_000L) {
+        if (wl?.isHeld == true) return
+        val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
+        wl = pm.newWakeLock(
             PowerManager.FULL_WAKE_LOCK or
-            PowerManager.ACQUIRE_CAUSES_WAKEUP or
-            PowerManager.ON_AFTER_RELEASE,
-            "IncidentalIQ::Wake"
+                PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                PowerManager.ON_AFTER_RELEASE,
+            "IncidentalIQ::Read"
         )
-        wl.acquire(WAKE_DURATION)
-        AppLog.write(TAG, "WakeLock acquired — screen forced on for ${WAKE_DURATION}ms")
+        wl?.acquire(timeoutMs)
+        val km = ctx.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        AppLog.write(TAG, "WakeLock acquired (screen on). keyguardLocked=${km.isKeyguardLocked}")
+        if (km.isKeyguardLocked) AppLog.write(TAG, "⚠ keyguard locked — ensure NO PIN is set on this phone")
+    }
 
-        val km = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        if (km.isKeyguardLocked) {
-            AppLog.write(TAG, "Keyguard LOCKED — screen on but lock screen visible. Ensure no PIN is set.")
-        } else {
-            AppLog.write(TAG, "Keyguard clear — screen on and unlocked")
-        }
+    fun release() {
+        try { if (wl?.isHeld == true) wl?.release() } catch (_: Exception) {}
+        wl = null
+        AppLog.write(TAG, "WakeLock released")
+    }
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            AppLog.write(TAG, "WakeLock auto-released after ${WAKE_DURATION}ms")
-        }, WAKE_DURATION + 100)
+    /** One-shot wake used by the manual test button. */
+    fun wake(ctx: Context) {
+        acquire(ctx, 5_000L)
+        AppLog.write(TAG, "manual wake — screen forced on ~5s")
     }
 }

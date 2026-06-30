@@ -38,7 +38,7 @@ Uses PowerManager.FULL_WAKE_LOCK + ACQUIRE_CAUSES_WAKEUP to wake screen. Uses Ke
 All captured messages written to local DB immediately on capture. Prevents data loss if network is down at sync time. Schema mirrors backend DB.
 
 **6. WorkManager**
-Batches buffered messages and POSTs to Cloudflare Worker every 30 minutes. Network-aware with retry and exponential backoff on failure. Marks messages as synced after confirmed POST.
+Batches buffered messages and POSTs to Cloudflare Worker every 30 minutes. Network-aware with retry and exponential backoff on failure. Marks messages as synced after confirmed POST. NOTE: this UPLOAD cadence (raw messages → D1) is decoupled from CLASSIFICATION cadence — the backend classifies via a Cloudflare Cron Trigger every 6 hours (00/06/12/18), batched per chat. Phone uploads often (cheap); Groq runs rarely (cheap on tokens).
 
 **7. Boot Receiver**
 RECEIVE_BOOT_COMPLETED broadcasts auto-restart all services on phone reboot. On boot, runs catch-up routine that opens each tracked chat and reads since last_seen.
@@ -74,21 +74,34 @@ Endpoints:
 
 **Classification approach (see /test for the working reference implementation):**
 - The full rulebook lives in `docs/incidental-types.md` (21 incidental types). The code injects a CONDENSED copy (~1KB) into the system prompt on every call — Groq has no memory and cannot read files. Keep doc and prompt in sync (long-term: derive both from a `types.json`).
-- Each message is sent with the **previous ~5 messages as history** so the model can resolve WHICH trip an incidental belongs to when the message itself omits it.
-- **Output is an array** — one message can name multiple incidentals (e.g. "rented chassis because we had to bobtail" → chassis_rental + bobtail).
+- **BATCHED, NOT one-per-message** (changed — the original 1-msg-per-call was only a POC to validate Groq). Production classifies a whole chat's new messages in ONE call: group by chat, chunk to ~25 messages (tunable `BATCH_SIZE`), each message tagged with a stable `id` the model must echo back so results map cleanly. Wins: pays the ~1KB rulebook ONCE per batch (not per message), slashes request count (RPD) and per-minute tokens (TPM), and gives the model whole-conversation context so it links incidentals to the right trip across messages. `classifyBatch()` in `test/classifier.mjs` is the reference; it filters out any result whose `id` wasn't in the batch (drops hallucinated ids).
+- **Output is an array per message** — one message can name multiple incidentals (e.g. "rented chassis because we had to bobtail" → chassis_rental + bobtail). The batch response is `{ "results": [...] }` with one entry PER INCIDENTAL-BEARING message only (clean messages omitted, since incidentals are sparse).
 - Each incidental carries a **status: `confirmed`** (cost actually incurred/happened) **or `possible`** (anticipated, at-risk, or being avoided). This is the key reliability lever: auto-trust `confirmed`, route `possible` to human review.
 - The peso AMOUNT does not matter and is usually absent — the goal is detecting that a trip HAS an incidental and its type, not the value.
+- **Sender hint:** every trip is assigned a driver + helper (named on the job-sheet/dispatch slip). The prompt tells Groq to use the message SENDER to help link an incidental to a trip (match sender ≈ a recent job sheet's driver/helper) — a hint, not proof (chat account names ≠ job-sheet names exactly).
 
-**Response schema:**
+**Context across batches — Groq has ZERO memory, so we re-feed everything each call.** Persistence is OUR job. The design (production / backend):
+- **Rolling situation summary** — each batch call ALSO returns an updated `situation_summary` (~150 output tokens); we store it and feed only the LATEST one into the next batch. It compresses ALL prior history (who's stuck, what's pending) into ~300-400 tokens → unlimited memory reach at a fixed tiny cost, and auto-forgets finished trips. This is far cheaper than carrying N raw message batches (which scale with message count and blow TPM).
+- **Trip registry** — durable per-chat list of seen container#/plate/client/driver (extracted free from each batch's `trip_reference` output, or by regex on container# `[A-Z]{4}\d{7}`). Fed in as a few hundred tokens so far-back trips stay linkable.
+- Per call we send: **rulebook + latest summary + trip registry + the new messages** → get back **incidentals + a fresh summary**.
+
+**Run cadence: every 6 hours (00:00 / 06:00 / 12:00 / 18:00), ~4 runs/day.** Incidentals can sit a while — no need for tighter. Fewer runs = the per-call fixed costs (rulebook, summary) are paid fewer times = fewer total tokens. ~4 runs × N chats ≈ tens of calls/day, miles under the 1,000/day cap.
+
+**Response schema (batch):**
 ```json
 {
-  "is_incidental": true,
-  "incidentals": [
-    { "incidental_type": "chassis_rental", "status": "confirmed", "confidence": 0.9 }
+  "results": [
+    {
+      "id": "m18",
+      "incidentals": [
+        { "incidental_type": "chassis_rental", "status": "confirmed", "confidence": 0.9 }
+      ],
+      "trip_reference": "TXGU5040257",
+      "reference_type": "container_number",
+      "reference_source": "message"
+    }
   ],
-  "trip_reference": "TXGU5040257",
-  "reference_type": "container_number",
-  "reference_source": "message"
+  "situation_summary": "CAP7500 stuck outside harbor since 4am, no docs. ..."
 }
 ```
 
@@ -102,12 +115,12 @@ Endpoints:
 | openai/gpt-oss-120b | 1,000 | 8,000 |
 | llama-3.1-8b-instant | 14,400 | 6,000 |
 
-- Limits are a continuously-refilling leaky bucket (NOT a reset). Each call draws ~1,100-1,200 tokens (the ~1KB rulebook dominates and is paid on EVERY call) + 1 request.
-- **USAGE = number of messages classified.** It does NOT depend on sync frequency or throttling — only message count. 1 message = 1 request.
-- **Per-minute (TPM) is the BURST bottleneck:** ~10 msgs/min on 70b, ~7 on 120b. Must THROTTLE batches (~6-9s between calls) or hit 429s. Throttle does not change usage, only pacing. The classifier already retries on 429.
-- **Per-day (RPD) is the VOLUME bottleneck:** 1,000/day on the smart models.
-- **Volume math (~100 classifiable msgs/day per chat):** 5 chats ≈ 500/day (safe), 7 chats ≈ 700/day (ok), 10 chats ≈ 1,000/day (at the cap).
-- **To safely run 8-10 chats:** (1) LOCAL pre-filter before calling Groq — skip job-sheet templates, reactions, images, "ok po" (~35% of messages); and/or (2) round-robin 70b + 120b for 2,000/day combined (free, separate buckets). Dedup notifications aggressively.
+- Limits are a continuously-refilling leaky bucket (NOT a reset). Each call draws ~1,100-1,200 tokens of rulebook (paid on EVERY call) + the context (summary + registry, ~few hundred tokens) + the batch's messages + ~150 output for the summary.
+- **USAGE = number of BATCHES (calls), not messages** (changed by batching). One call classifies ~25 messages. So usage now scales with batch count, not message count — dramatically lower than the old 1-msg-1-request model.
+- **Per-call token budget ≈ ~3,000-3,500** (rulebook + summary + registry + ~25 msgs + output) — fits comfortably under TPM in a single call. AVOID carrying many raw message batches as context (~6,000+ tokens, breaks the 8,000 TPM on 120b) — that's why we use the compressed summary instead.
+- **Per-minute (TPM):** with batching, one call/min is trivially within limits; chunks within a run go back-to-back with a small throttle. The classifier already retries on 429.
+- **Per-day (RPD) — 1,000/day on the smart models — is now a non-issue.** 4 runs/day × N chats ≈ tens of calls/day. Even 10+ chats stays far under the cap.
+- **Optional extra headroom (probably unneeded now):** LOCAL noise pre-filter before batching (skip reactions, pure images, "ok po"); and/or round-robin 70b + 120b (separate buckets, 2,000/day combined). Still dedupe aggressively on-device (chat + content, 10-min window) and durably in D1 before classifying.
 
 ---
 
@@ -145,9 +158,31 @@ CREATE TABLE incidentals (
 
 CREATE INDEX idx_incidentals_trip ON incidentals(trip_reference);
 CREATE INDEX idx_msg_timestamp ON captured_messages(timestamp);
+
+-- Cross-batch memory (since Groq is stateless). One row per chat: the latest rolling summary.
+CREATE TABLE chat_state (
+  group_name TEXT PRIMARY KEY,
+  situation_summary TEXT,           -- the LATEST rolling summary, fed into the next batch
+  updated_at TEXT
+);
+
+-- Trip registry: durable per-chat list of known trip identifiers, so far-back trips stay linkable.
+CREATE TABLE trips (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_name TEXT NOT NULL,
+  trip_reference TEXT NOT NULL,     -- container# | plate | client | booking ref
+  reference_type TEXT,
+  driver TEXT,                      -- from the job sheet, helps sender→trip linking
+  helper TEXT,
+  first_seen TEXT,
+  last_seen TEXT,                   -- stale trips age out of the context we feed in
+  UNIQUE(group_name, trip_reference)
+);
 ```
 
-source is either 'viber' or 'messenger'. raw_notif is 1 if captured from notification, 0 if from accessibility service. Dedupe captured_messages by (source + group + sender + timestamp + content hash) before classifying — duplicate notifications waste requests.
+source is either 'viber' or 'messenger'. raw_notif is 1 if captured from notification, 0 if from accessibility service.
+
+**Dedup (changed):** key on **(source + group + content)** within a ~10-min window — NOT sender, because the two capture paths report sender differently (notification = "group: Name", accessibility = bare "Name"), which let the same message through as a "new" sender. On-device dedup is in-memory (resets on app restart); the durable guard is content-hash dedup in D1 before any Groq call.
 
 ---
 
