@@ -1,4 +1,4 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.capture
 
 import android.accessibilityservice.AccessibilityService
 import android.app.ActivityOptions
@@ -8,6 +8,9 @@ import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import com.tvl.incidentaliq.core.AppLog
+import com.tvl.incidentaliq.core.WakeLockHelper
+import com.tvl.incidentaliq.data.MessageStore
 
 /**
  * Drives the read cycle for a truncated/image notification, ONE at a time:

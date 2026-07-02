@@ -1,0 +1,19 @@
+{
+  "name": "tripops-backend",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 execute tripops --local --file=./schema.sql",
+    "db:remote": "wrangler d1 execute tripops --remote --file=./schema.sql",
+    "seed:local": "wrangler d1 execute tripops --local --file=./seed.sql",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240909.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^4.0.0"
+  }
+}

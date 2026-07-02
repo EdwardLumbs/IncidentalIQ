@@ -1,6 +1,7 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.core
 
 import android.util.Log
+import com.tvl.incidentaliq.App
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date

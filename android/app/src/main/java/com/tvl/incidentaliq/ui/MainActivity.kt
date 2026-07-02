@@ -1,11 +1,19 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.ui
 
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.ScrollView
 import androidx.appcompat.app.AppCompatActivity
+import com.tvl.incidentaliq.capture.MonitorForegroundService
+import com.tvl.incidentaliq.capture.UITreeAccessibilityService
+import com.tvl.incidentaliq.core.Config
+import com.tvl.incidentaliq.core.LogBus
+import com.tvl.incidentaliq.core.Monitoring
+import com.tvl.incidentaliq.core.WakeLockHelper
+import com.tvl.incidentaliq.data.MessageStore
 import com.tvl.incidentaliq.databinding.ActivityMainBinding
+import com.tvl.incidentaliq.sync.Uploader
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -36,6 +44,16 @@ class MainActivity : AppCompatActivity() {
         binding.btnWakeScreen.setOnClickListener {
             WakeLockHelper.wake(this)
             log("Wake screen triggered")
+        }
+
+        binding.btnSyncNow.setOnClickListener {
+            val pending = MessageStore.pendingCount(this)
+            if (!Config.isConfigured(this)) {
+                log("Sync: backend URL not set yet — $pending message(s) buffered, nothing uploaded")
+            } else {
+                log("Sync: uploading now — $pending message(s) buffered")
+                Uploader.syncNow(this)
+            }
         }
 
         binding.btnDumpTree.setOnClickListener {

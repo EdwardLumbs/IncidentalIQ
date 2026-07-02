@@ -1,8 +1,12 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.capture
 
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.tvl.incidentaliq.core.AppLog
+import com.tvl.incidentaliq.core.Monitoring
+import com.tvl.incidentaliq.data.CapturedMessage
+import com.tvl.incidentaliq.data.MessageStore
 
 class NotificationListener : NotificationListenerService() {
 

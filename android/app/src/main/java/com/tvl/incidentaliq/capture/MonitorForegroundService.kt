@@ -1,4 +1,4 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.capture
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import com.tvl.incidentaliq.core.AppLog
 
 class MonitorForegroundService : Service() {
 

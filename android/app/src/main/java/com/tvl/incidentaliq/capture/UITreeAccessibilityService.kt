@@ -1,4 +1,4 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.capture
 
 import android.accessibilityservice.AccessibilityService
 import android.content.BroadcastReceiver
@@ -9,6 +9,8 @@ import android.graphics.Rect
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.content.ContextCompat
+import com.tvl.incidentaliq.core.AppLog
+import com.tvl.incidentaliq.data.CapturedMessage
 
 class UITreeAccessibilityService : AccessibilityService() {
 

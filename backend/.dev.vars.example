@@ -1,0 +1,3 @@
+# Copy this file to `.dev.vars` (gitignored) for LOCAL `wrangler dev`.
+# In production these are set with:  wrangler secret put GROQ_API_KEY
+GROQ_API_KEY = "gsk_your_groq_key_here"

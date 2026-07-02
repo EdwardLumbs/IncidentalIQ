@@ -1,6 +1,7 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.data
 
 import android.content.Context
+import com.tvl.incidentaliq.core.AppLog
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,4 +66,39 @@ object MessageStore {
     }
 
     fun path(ctx: Context) = file(ctx).absolutePath
+
+    /** How many messages are currently buffered on disk (not yet uploaded). */
+    @Synchronized
+    fun pendingCount(ctx: Context): Int {
+        val f = file(ctx)
+        if (!f.exists()) return 0
+        return f.readLines().count { it.isNotBlank() }
+    }
+
+    /**
+     * Snapshot the buffered messages for upload. Returns the current non-blank JSONL lines (each is
+     * already a JSON object). We DON'T delete here — only after the POST is confirmed do we call
+     * pruneFirst(count) to remove exactly these, so a failed upload never loses data.
+     */
+    @Synchronized
+    fun snapshotForUpload(ctx: Context): List<String> {
+        val f = file(ctx)
+        if (!f.exists()) return emptyList()
+        return f.readLines().filter { it.isNotBlank() }
+    }
+
+    /**
+     * Remove the first [count] buffered lines — the ones we just uploaded successfully — while
+     * KEEPING anything appended during the upload (those are the lines after the first count).
+     * This is the pruning that stops the on-disk buffer from growing forever.
+     */
+    @Synchronized
+    fun pruneFirst(ctx: Context, count: Int) {
+        if (count <= 0) return
+        val f = file(ctx)
+        if (!f.exists()) return
+        val remaining = f.readLines().filter { it.isNotBlank() }.drop(count)
+        if (remaining.isEmpty()) f.writeText("") else f.writeText(remaining.joinToString("\n") + "\n")
+        AppLog.write(TAG, "pruned $count uploaded message(s); ${remaining.size} still buffered")
+    }
 }

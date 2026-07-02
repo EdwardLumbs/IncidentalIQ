@@ -1,0 +1,25 @@
+# Cloudflare Worker config for the Trip Ops Incidental Monitor backend.
+# Everything here is free-tier. Deploy with `npm run deploy` (needs `wrangler login` once).
+
+name = "tripops-monitor"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# ── D1 database binding ──────────────────────────────────────────────
+# `database_id` is filled in AFTER you run:  wrangler d1 create tripops
+# (locally, `wrangler dev` uses a fake on-disk copy and ignores the id).
+[[d1_databases]]
+binding = "DB"                 # code accesses it as env.DB
+database_name = "tripops"
+database_id = "REPLACE_AFTER_wrangler_d1_create"
+
+# ── Cron: run the classifier every 6 hours (00:00 / 06:00 / 12:00 / 18:00 UTC) ──
+[triggers]
+crons = ["0 0,6,12,18 * * *"]
+
+# ── Plain (non-secret) config. The Groq API KEY is a SECRET, set separately with:
+#      wrangler secret put GROQ_API_KEY
+# so it is never written to this file.
+[vars]
+GROQ_MODEL = "llama-3.3-70b-versatile"
+BATCH_SIZE = "25"

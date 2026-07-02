@@ -1,6 +1,7 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.capture
 
 import android.view.accessibility.AccessibilityNodeInfo
+import com.tvl.incidentaliq.data.CapturedMessage
 
 /** Depth-first pre-order walk = roughly top-to-bottom visual order. */
 private fun walk(node: AccessibilityNodeInfo?, action: (AccessibilityNodeInfo) -> Unit) {

@@ -1,4 +1,4 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.core
 
 import android.app.KeyguardManager
 import android.content.Context

@@ -1,4 +1,4 @@
-package com.tvl.incidentaliq
+package com.tvl.incidentaliq.core
 
 object LogBus {
     var listener: ((String) -> Unit)? = null
