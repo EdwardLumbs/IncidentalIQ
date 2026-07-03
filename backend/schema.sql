@@ -29,13 +29,24 @@ CREATE TABLE IF NOT EXISTS incidentals (
   status TEXT NOT NULL,            -- 'confirmed' | 'possible'
   confidence REAL,
   amount REAL,                     -- usually NULL (amount doesn't matter for the use case)
-  trip_reference TEXT              -- denormalized for fast GROUP BY per trip
+  trip_reference TEXT,             -- denormalized for fast GROUP BY per trip
+  -- Idempotency guard: if the same message is ever classified twice (e.g. cron overlapping a
+  -- manual /run), INSERT OR IGNORE relies on this to avoid duplicate incidental rows.
+  UNIQUE(message_id, incidental_type, status)
 );
 
 -- Cross-batch memory (Groq is stateless). One row per chat: the latest rolling summary.
 CREATE TABLE IF NOT EXISTS chat_state (
   group_name TEXT PRIMARY KEY,
   situation_summary TEXT,
+  updated_at TEXT
+);
+
+-- Ops health: last cron outcome, so a broken parser / dead Groq key doesn't fail silently.
+-- Read via GET /health. One row per key (e.g. 'last_cron').
+CREATE TABLE IF NOT EXISTS system_status (
+  key TEXT PRIMARY KEY,
+  value TEXT,
   updated_at TEXT
 );
 

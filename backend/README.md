@@ -12,7 +12,16 @@ cross-batch memory). All free-tier.
 | `POST` | `/run` | Manually trigger the classifier (same work the cron does) — for testing. |
 | `GET`  | `/health` | Liveness check. |
 
-The cron (`0 0,6,12,18 * * *`) runs the classifier automatically.
+The cron (`15 0,6,12,18 * * *` — every 6 h, offset +15 min) runs the classifier automatically.
+
+## Auth
+Every endpoint except `/` and `/health` requires a shared secret. Send it as a header:
+```
+Authorization: Bearer <API_TOKEN>
+```
+Set `API_TOKEN` as a secret (`wrangler secret put API_TOKEN`, or in `.dev.vars` locally). The phone
+stores the same token and sends it on every upload. There are no user accounts — it's one shared
+machine-to-machine secret. Requests without it get `401`.
 
 ## Local development (no Cloudflare account needed)
 ```bash
@@ -23,17 +32,22 @@ npm run db:local                     # create the tables in the local D1 file
 npm run seed:local                   # (optional) load sample messages
 npm run dev                          # http://localhost:8787
 ```
-Test it:
+Test it (all non-health calls need the token — matches `API_TOKEN` in `.dev.vars`):
 ```bash
+TOKEN=dev_token_change_me
+
 # upload messages
-curl -X POST localhost:8787/messages -H "content-type: application/json" \
+curl -X POST localhost:8787/messages -H "authorization: Bearer $TOKEN" -H "content-type: application/json" \
   -d '{"messages":[{"source":"VIBER","chat":"TVL X BEST","sender":"R. Ando","content":"nag lalamove kami ng selyo","ts":"2026-07-02T04:00:00"}]}'
 
 # run the classifier now (instead of waiting for the cron)
-curl -X POST localhost:8787/run
+curl -X POST localhost:8787/run -H "authorization: Bearer $TOKEN"
 
 # see results
-curl localhost:8787/incidentals
+curl localhost:8787/incidentals -H "authorization: Bearer $TOKEN"
+
+# health (no token needed) — shows the last cron outcome
+curl localhost:8787/health
 ```
 
 ## Deploy to the cloud (needs a free Cloudflare account)
@@ -42,6 +56,7 @@ npx wrangler login                          # opens browser once
 npx wrangler d1 create tripops              # copy the printed database_id into wrangler.toml
 npm run db:remote                           # create tables in the cloud DB
 npx wrangler secret put GROQ_API_KEY        # paste your Groq key (never in the repo)
+npx wrangler secret put API_TOKEN           # paste a strong shared secret (openssl rand -hex 32)
 npm run deploy                              # → https://tripops-monitor.<you>.workers.dev
 ```
 

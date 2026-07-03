@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit",
     "deploy": "wrangler deploy",
     "db:local": "wrangler d1 execute tripops --local --file=./schema.sql",
     "db:remote": "wrangler d1 execute tripops --remote --file=./schema.sql",

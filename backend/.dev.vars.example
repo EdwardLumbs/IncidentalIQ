@@ -1,3 +1,7 @@
 # Copy this file to `.dev.vars` (gitignored) for LOCAL `wrangler dev`.
-# In production these are set with:  wrangler secret put GROQ_API_KEY
+# In production these are set with:  wrangler secret put GROQ_API_KEY  /  wrangler secret put API_TOKEN
 GROQ_API_KEY = "gsk_your_groq_key_here"
+
+# Shared secret the phone must send as `Authorization: Bearer <API_TOKEN>` on every request.
+# Generate a strong one:  openssl rand -hex 32
+API_TOKEN = "dev_token_change_me"

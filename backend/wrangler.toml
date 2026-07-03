@@ -13,13 +13,21 @@ binding = "DB"                 # code accesses it as env.DB
 database_name = "tripops"
 database_id = "REPLACE_AFTER_wrangler_d1_create"
 
-# ── Cron: run the classifier every 6 hours (00:00 / 06:00 / 12:00 / 18:00 UTC) ──
+# ── Cron: run the classifier every 6 hours, offset +15 min (00:15 / 06:15 / 12:15 / 18:15 UTC) ──
+# The +15 offset is a cushion: the phone uploads on its own ~30-min cycle, so firing at :15 (not :00)
+# gives the most recent upload time to land in D1 BEFORE the classifier reads. Without it, messages
+# that arrived just before the hour could miss this run and wait a full 6 h for the next one.
 [triggers]
-crons = ["0 0,6,12,18 * * *"]
+crons = ["15 0,6,12,18 * * *"]
 
-# ── Plain (non-secret) config. The Groq API KEY is a SECRET, set separately with:
-#      wrangler secret put GROQ_API_KEY
-# so it is never written to this file.
+# ── Secrets (NEVER in this file) — set once each with `wrangler secret put`:
+#      wrangler secret put GROQ_API_KEY     ← your Groq key
+#      wrangler secret put API_TOKEN        ← shared secret the phone must send on every request
+# Generate a strong API_TOKEN with e.g.:  openssl rand -hex 32
+# For local `wrangler dev`, put both in .dev.vars instead (see .dev.vars.example).
+
+# ── Plain (non-secret) config. ──
 [vars]
 GROQ_MODEL = "llama-3.3-70b-versatile"
 BATCH_SIZE = "25"
+MAX_MSGS_PER_RUN = "300"     # cap messages classified per cron run (keeps subrequests bounded)

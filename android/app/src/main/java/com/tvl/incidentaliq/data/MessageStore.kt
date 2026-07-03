@@ -3,6 +3,7 @@ package com.tvl.incidentaliq.data
 import android.content.Context
 import com.tvl.incidentaliq.core.AppLog
 import java.io.File
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -18,46 +19,85 @@ data class CapturedMessage(
     val capturedAt: Long = System.currentTimeMillis(),
 )
 
-/** Appends captured messages to captured_messages.jsonl, with in-memory dedup. */
+/** Appends captured messages to captured_messages.jsonl, with dedup that survives app restarts. */
 object MessageStore {
     private const val TAG = "STORE"
     private const val DEDUP_CAP = 500              // remember the last N message keys
     private const val DEDUP_WINDOW_MS = 10 * 60 * 1000L  // collapse repeats seen within 10 min
+    private const val MAX_CONTENT = 4000           // cap a pathological message so one line/upload can't explode
     private val iso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
     private fun file(ctx: Context) = File(ctx.filesDir, "captured_messages.jsonl")
+    private fun dedupFile(ctx: Context) = File(ctx.filesDir, "dedup_seen.tsv")
 
     // Bounded LRU of recently-stored keys → last-seen timestamp, so re-reading an open chat
-    // (or re-scraping a still-visible message during another chat's read) doesn't duplicate.
-    // Key is chat+content only: sender is NOT in the key because the two capture paths report
-    // it differently (notification = "group: Name", accessibility = bare "Name"), which would
-    // otherwise let the same message slip through as a "new" sender. A time window guards the
-    // edge case of the same short text legitimately recurring much later.
-    // NOTE: still in-memory (resets on app restart) — the durable guard is dedup in the backend
-    // (content-hash in D1) before any Groq call. TODO: move to the Room/SQLite buffer.
+    // (or re-scraping a still-visible message) doesn't duplicate. Key is a HASH of source+chat+
+    // content only (sender excluded — the two capture paths report it differently). The map is
+    // persisted to dedupFile so a restart doesn't forget recent messages and re-store them; the
+    // backend content-hash dedup in D1 is still the durable guard of last resort.
     private val seen = object : LinkedHashMap<String, Long>(DEDUP_CAP, 0.75f, false) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Long>?) = size > DEDUP_CAP
     }
+    private var loaded = false
 
     private fun esc(s: String) =
         s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
 
-    private fun key(m: CapturedMessage) = "${m.source}|${m.chat}|${m.content}"
+    private fun sha256(s: String): String {
+        val d = MessageDigest.getInstance("SHA-256").digest(s.toByteArray(Charsets.UTF_8))
+        return d.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun keyOf(source: String, chat: String, content: String) =
+        sha256("$source|$chat|$content")
+
+    /** Load the persisted dedup keys once (survives app restart). */
+    private fun ensureLoaded(ctx: Context) {
+        if (loaded) return
+        loaded = true
+        val f = dedupFile(ctx)
+        if (!f.exists()) return
+        try {
+            f.readLines().takeLast(DEDUP_CAP).forEach { line ->
+                val tab = line.indexOf('\t')
+                if (tab > 0) {
+                    val k = line.substring(0, tab)
+                    val t = line.substring(tab + 1).toLongOrNull() ?: return@forEach
+                    seen[k] = t
+                }
+            }
+            AppLog.write(TAG, "loaded ${seen.size} dedup key(s) from disk")
+        } catch (e: Exception) {
+            AppLog.write(TAG, "dedup load failed: ${e.message}")
+        }
+    }
+
+    /** Rewrite the dedup file from the current in-memory map (≤500 short lines — cheap). */
+    private fun persistDedup(ctx: Context) {
+        try {
+            dedupFile(ctx).writeText(seen.entries.joinToString("\n") { "${it.key}\t${it.value}" })
+        } catch (e: Exception) {
+            AppLog.write(TAG, "dedup persist failed: ${e.message}")
+        }
+    }
 
     /** Returns true if the message was new and stored, false if it was a recent duplicate. */
     @Synchronized
     fun save(ctx: Context, m: CapturedMessage): Boolean {
-        val k = key(m)
+        ensureLoaded(ctx)
+        val content = if (m.content.length > MAX_CONTENT) m.content.take(MAX_CONTENT) else m.content
+        val k = keyOf(m.source, m.chat, content)
         val now = m.capturedAt
         val last = seen[k]
         if (last != null && now - last < DEDUP_WINDOW_MS) return false
         seen[k] = now
         val json = """{"ts":"${iso.format(Date(m.capturedAt))}","source":"${m.source}",""" +
             """"chat":"${esc(m.chat)}","sender":"${esc(m.sender)}",""" +
-            """"content":"${esc(m.content)}","is_image":${m.isImage},""" +
+            """"content":"${esc(content)}","is_image":${m.isImage},""" +
             """"via_accessibility":${m.viaAccessibility}}"""
         return try {
             file(ctx).appendText("$json\n")
-            AppLog.write(TAG, "saved → ${m.source} | ${m.sender}: ${m.content.take(80)}")
+            persistDedup(ctx)
+            AppLog.write(TAG, "saved → ${m.source} | ${m.sender}: ${content.take(80)}")
             true
         } catch (e: Exception) {
             AppLog.write(TAG, "save FAILED: ${e.message}")
@@ -76,15 +116,16 @@ object MessageStore {
     }
 
     /**
-     * Snapshot the buffered messages for upload. Returns the current non-blank JSONL lines (each is
-     * already a JSON object). We DON'T delete here — only after the POST is confirmed do we call
+     * Snapshot up to [limit] buffered messages for upload (oldest first). Returns the current
+     * non-blank JSONL lines. We DON'T delete here — only after the POST is confirmed do we call
      * pruneFirst(count) to remove exactly these, so a failed upload never loses data.
      */
     @Synchronized
-    fun snapshotForUpload(ctx: Context): List<String> {
+    fun snapshotForUpload(ctx: Context, limit: Int = Int.MAX_VALUE): List<String> {
         val f = file(ctx)
         if (!f.exists()) return emptyList()
-        return f.readLines().filter { it.isNotBlank() }
+        val lines = f.readLines().filter { it.isNotBlank() }
+        return if (lines.size > limit) lines.take(limit) else lines
     }
 
     /**
