@@ -20,8 +20,9 @@ class UITreeAccessibilityService : AccessibilityService() {
         var instance: UITreeAccessibilityService? = null
     }
 
-    // Lets us trigger a dump from adb while a chat is on-screen:
-    //   adb shell am broadcast -a com.tvl.incidentaliq.DUMP
+    // Internal dump trigger. Registered NOT_EXPORTED so no other app on the device can fire it
+    // (an exported receiver would let any app dump on-screen chat content into our log). Use the
+    // in-app "Dump Tree" button for dev, which calls dumpTree() directly.
     private val dumpReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             AppLog.write(TAG, "DUMP broadcast received")
@@ -32,10 +33,10 @@ class UITreeAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         instance = this
         ContextCompat.registerReceiver(
-            this, dumpReceiver, IntentFilter(ACTION_DUMP), ContextCompat.RECEIVER_EXPORTED
+            this, dumpReceiver, IntentFilter(ACTION_DUMP), ContextCompat.RECEIVER_NOT_EXPORTED
         )
         AppLog.write(TAG, "AccessibilityService connected — watching Viber + Messenger")
-        AppLog.write(TAG, "Trigger a dump with: adb shell am broadcast -a $ACTION_DUMP")
+        AppLog.write(TAG, "Dump via the in-app 'Dump Tree' button while a chat is on-screen")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {}

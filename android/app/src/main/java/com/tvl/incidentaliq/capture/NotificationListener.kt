@@ -4,6 +4,7 @@ import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.tvl.incidentaliq.core.AppLog
+import com.tvl.incidentaliq.core.Config
 import com.tvl.incidentaliq.core.Monitoring
 import com.tvl.incidentaliq.data.CapturedMessage
 import com.tvl.incidentaliq.data.MessageStore
@@ -36,6 +37,14 @@ class NotificationListener : NotificationListenerService() {
         val bigText = extras.getCharSequence("android.bigText")?.toString() ?: ""
         val content = bigText.ifEmpty { text }
 
+        // Group name is not reliably in one field. For a MessagingStyle group notification the
+        // group is usually in conversationTitle; subText sometimes carries it too; title is the
+        // last resort (often the SENDER for a group). We match against all three candidates.
+        val convTitle = extras.getCharSequence("android.conversationTitle")?.toString() ?: ""
+        val subText = extras.getCharSequence("android.subText")?.toString() ?: ""
+        val groupCandidates = listOf(convTitle, subText, title)
+        val groupName = convTitle.ifEmpty { subText }.ifEmpty { title }
+
         val app = if (sbn.packageName == "com.viber.voip") "VIBER" else "MESSENGER"
         val truncated = content.length >= 95
         val imageLike = content in MEDIA_PREVIEWS
@@ -45,26 +54,30 @@ class NotificationListener : NotificationListenerService() {
         val isSummary = (n.flags and Notification.FLAG_GROUP_SUMMARY) != 0 || sbn.id == Int.MAX_VALUE
         val isSystem = title in SYSTEM_SENDERS || title.contains("call", ignoreCase = true)
         val isNoise = isOngoing || isSummary || isSystem
+        // Tracked-group gate: empty list for this app = capture ALL (default until configured).
+        val tracked = Config.isGroupTracked(this, app, groupCandidates)
 
         AppLog.write(TAG, "─── NEW NOTIF ─── $app  id=${sbn.id}")
-        AppLog.write(TAG, "  sender=\"$title\"  truncated=$truncated  image=$imageLike  noise=$isNoise")
+        AppLog.write(TAG, "  sender=\"$title\"  group=\"$groupName\"  truncated=$truncated  image=$imageLike  noise=$isNoise  tracked=$tracked")
         AppLog.write(TAG, "  content=\"${content.take(110)}\"")
 
         when {
             isNoise -> AppLog.write(TAG, "  ACTION: skipped (noise: ongoing=$isOngoing summary=$isSummary system=$isSystem)")
 
+            !tracked -> AppLog.write(TAG, "  ACTION: skipped (untracked group \"$groupName\" not in $app list)")
+
             truncated || imageLike -> {
                 AppLog.write(TAG, "  ACTION: enqueue accessibility READ (${if (truncated) "truncated" else "image"})")
                 ReadCoordinator.enqueue(
                     this,
-                    ReadCoordinator.Task(app, sbn.packageName, title, n.contentIntent)
+                    ReadCoordinator.Task(app, sbn.packageName, groupName, n.contentIntent)
                 )
             }
 
             else -> {
                 // Short, full text already in the notification — store it directly.
                 AppLog.write(TAG, "  ACTION: full content from notification — stored directly")
-                MessageStore.save(this, CapturedMessage(app, title, title, content, false, viaAccessibility = false))
+                MessageStore.save(this, CapturedMessage(app, groupName, title, content, false, viaAccessibility = false))
             }
         }
     }

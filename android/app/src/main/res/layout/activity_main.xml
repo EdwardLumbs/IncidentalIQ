@@ -51,6 +51,63 @@
         android:layout_margin="4dp"
         android:text="SYNC NOW (upload buffered messages)" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="4dp"
+        android:text="Tracked groups — one name per line. Leave blank = capture ALL."
+        android:textSize="11sp"
+        android:textStyle="italic" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/etViberGroups"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:background="#111111"
+            android:fontFamily="monospace"
+            android:gravity="top"
+            android:hint="Viber groups"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:minLines="3"
+            android:padding="8dp"
+            android:textColor="#00FF00"
+            android:textColorHint="#666666"
+            android:textSize="12sp" />
+
+        <EditText
+            android:id="@+id/etMessengerGroups"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:background="#111111"
+            android:fontFamily="monospace"
+            android:gravity="top"
+            android:hint="Messenger groups"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:minLines="3"
+            android:padding="8dp"
+            android:textColor="#00FF00"
+            android:textColorHint="#666666"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnSaveGroups"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="4dp"
+        android:text="SAVE TRACKED GROUPS" />
+
     <ScrollView
         android:id="@+id/scrollLog"
         android:layout_width="match_parent"

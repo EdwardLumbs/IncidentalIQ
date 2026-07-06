@@ -56,6 +56,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Tracked group editors: load the saved lists, save back on tap.
+        binding.etViberGroups.setText(Config.trackedGroupsText(this, "VIBER"))
+        binding.etMessengerGroups.setText(Config.trackedGroupsText(this, "MESSENGER"))
+        binding.btnSaveGroups.setOnClickListener {
+            Config.setTrackedGroups(this, "VIBER", binding.etViberGroups.text.toString())
+            Config.setTrackedGroups(this, "MESSENGER", binding.etMessengerGroups.text.toString())
+            val v = Config.trackedGroups(this, "VIBER").size
+            val m = Config.trackedGroups(this, "MESSENGER").size
+            log("Saved tracked groups — Viber: $v, Messenger: $m  (0 = capture all)")
+        }
+
         binding.btnDumpTree.setOnClickListener {
             val svc = UITreeAccessibilityService.instance
             if (svc == null) {

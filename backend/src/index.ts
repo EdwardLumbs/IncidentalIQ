@@ -83,7 +83,9 @@ export default {
 
       return json({ ok: false, error: "not found" }, 404);
     } catch (e: any) {
-      return json({ ok: false, error: String(e?.message ?? e) }, 500);
+      // Log the real detail server-side; never leak DB/Groq internals to the caller.
+      console.error("request error:", String(e?.message ?? e));
+      return json({ ok: false, error: "internal error" }, 500);
     }
   },
 
