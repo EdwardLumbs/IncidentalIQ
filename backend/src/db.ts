@@ -271,6 +271,36 @@ export async function getSystemStatus(DB: D1Database): Promise<Record<string, { 
   return out;
 }
 
+export interface Metrics {
+  cron_runs: number;       // how many classifier runs have completed
+  total_batches: number;   // Groq API calls made (usage scales with this, not messages)
+  total_tokens: number;    // Groq tokens consumed (prompt + completion), across all runs
+  total_incidentals: number;
+  total_processed: number; // messages classified
+  last_run_at: string;
+}
+
+// Read-modify-write the cumulative metrics row. Cron runs are sequential and 6h apart, so there's
+// no race here. Stored as one JSON blob under the 'metrics' key in system_status; surfaced at /health.
+export async function bumpMetrics(
+  DB: D1Database,
+  delta: { batches: number; tokens: number; incidentals: number; processed: number },
+): Promise<Metrics> {
+  const row = await DB.prepare("SELECT value FROM system_status WHERE key = 'metrics'").first<{ value: string }>();
+  const m: Metrics = {
+    cron_runs: 0, total_batches: 0, total_tokens: 0, total_incidentals: 0, total_processed: 0, last_run_at: "",
+  };
+  if (row?.value) { try { Object.assign(m, JSON.parse(row.value)); } catch {} }
+  m.cron_runs += 1;
+  m.total_batches += delta.batches;
+  m.total_tokens += delta.tokens;
+  m.total_incidentals += delta.incidentals;
+  m.total_processed += delta.processed;
+  m.last_run_at = new Date().toISOString();
+  await setSystemStatus(DB, "metrics", JSON.stringify(m));
+  return m;
+}
+
 // GET /incidentals — join incidentals to their message, newest first, optional filters.
 export async function queryIncidentals(
   DB: D1Database,

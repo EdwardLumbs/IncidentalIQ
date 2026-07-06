@@ -1,6 +1,7 @@
 package com.tvl.incidentaliq.core
 
 import android.content.Context
+import com.tvl.incidentaliq.BuildConfig
 
 /**
  * Backend connection config. The Worker URL is stored in SharedPreferences so it can be changed
@@ -16,12 +17,13 @@ object Config {
     private const val KEY_GROUPS_VIBER = "tracked_groups_viber"
     private const val KEY_GROUPS_MESSENGER = "tracked_groups_messenger"
 
-    // Default backend base URL. Fill in your deployed Worker URL here, or set at runtime.
-    // e.g. "https://tripops-monitor.<your-subdomain>.workers.dev"
-    private const val DEFAULT_URL = ""
+    // Deployed Worker base URL. Stable + public (not a secret), so it's fine hardcoded here.
+    // setBackendUrl(...) can still override it at runtime if the URL ever changes.
+    private const val DEFAULT_URL = "https://tripops-monitor.programmeredward.workers.dev"
     // Shared secret sent as `Authorization: Bearer <token>` — must match the Worker's API_TOKEN.
-    // Set at runtime with setApiToken(...) so it isn't baked into source control.
-    private const val DEFAULT_TOKEN = ""
+    // Comes from BuildConfig (fed by gitignored local.properties), so it's compiled into the APK
+    // but never committed to source control. setApiToken(...) can still override at runtime.
+    private val DEFAULT_TOKEN = BuildConfig.API_TOKEN
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 

@@ -11,7 +11,7 @@ compatibility_date = "2025-01-01"
 [[d1_databases]]
 binding = "DB"                 # code accesses it as env.DB
 database_name = "tripops"
-database_id = "REPLACE_AFTER_wrangler_d1_create"
+database_id = "fcbbbfd2-eee8-4238-8cb0-3790ecce33a9"
 
 # ── Cron: run the classifier every 6 hours, offset +15 min (00:15 / 06:15 / 12:15 / 18:15 UTC) ──
 # The +15 offset is a cushion: the phone uploads on its own ~30-min cycle, so firing at :15 (not :00)
@@ -25,6 +25,11 @@ crons = ["15 0,6,12,18 * * *"]
 #      wrangler secret put API_TOKEN        ← shared secret the phone must send on every request
 # Generate a strong API_TOKEN with e.g.:  openssl rand -hex 32
 # For local `wrangler dev`, put both in .dev.vars instead (see .dev.vars.example).
+
+# ── Observability: keep logs so past cron runs / requests are reviewable in the dashboard ──
+# (Free-tier included, capped + short retention — never bills. Without this, logs are live-only.)
+[observability]
+enabled = true
 
 # ── Plain (non-secret) config. ──
 [vars]

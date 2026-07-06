@@ -7,7 +7,7 @@ import {
 import {
   insertMessages, chatsWithUnclassified, unclassifiedFor, getSummary, getTrips,
   saveSummary, saveChunkResults, batchUpsertTrips, queryIncidentals,
-  setSystemStatus, getSystemStatus,
+  setSystemStatus, getSystemStatus, bumpMetrics,
 } from "./db.js";
 
 export interface Env {
@@ -95,7 +95,11 @@ export default {
       runClassifier(env)
         .then(async (r) => {
           await setSystemStatus(env.DB, "last_cron", JSON.stringify({ ok: true, ...r, at: new Date().toISOString() }));
-          console.log("cron done:", JSON.stringify(r));
+          // Accumulate lifetime totals (cron count, batches, Groq tokens, incidentals) for /health.
+          const totals = await bumpMetrics(env.DB, {
+            batches: r.batches, tokens: r.tokens, incidentals: r.incidentals, processed: r.processed,
+          }).catch(() => null);
+          console.log("cron done:", JSON.stringify(r), "totals:", JSON.stringify(totals));
         })
         .catch(async (e) => {
           // Record the failure so it's visible at /health instead of vanishing silently.
@@ -111,14 +115,14 @@ export default {
 // Core classification pass: for each chat with unclassified messages, batch → Groq → persist.
 // Bounded to MAX_MSGS_PER_RUN messages total so a big backlog can't exceed the Worker's
 // subrequest cap in a single invocation (the remainder is picked up by the next run).
-async function runClassifier(env: Env): Promise<{ chats: number; batches: number; incidentals: number; processed: number }> {
+async function runClassifier(env: Env): Promise<{ chats: number; batches: number; incidentals: number; processed: number; tokens: number }> {
   if (!env.GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   const model = env.GROQ_MODEL || "llama-3.3-70b-versatile";
   const batchSize = Math.max(1, Number(env.BATCH_SIZE) || 25);
   const maxPerRun = Math.max(1, Number(env.MAX_MSGS_PER_RUN) || MAX_MSGS_PER_RUN_DEFAULT);
   const contextTail = 5; // last N messages of prior chunk carried as reference
 
-  let batches = 0, incidentalsTotal = 0, processed = 0;
+  let batches = 0, incidentalsTotal = 0, processed = 0, tokens = 0;
   const chats = await chatsWithUnclassified(env.DB);
 
   for (const group of chats) {
@@ -138,9 +142,10 @@ async function runClassifier(env: Env): Promise<{ chats: number; batches: number
         ...chunk.map((m) => ({ id: String(m.id), sender: m.sender, content: m.message })),
       ];
 
-      const { out } = await classifyBatch({
+      const { out, meta } = await classifyBatch({
         apiKey: env.GROQ_API_KEY, model, summary, trips, messages: batchMsgs,
       });
+      tokens += meta?.usage?.total_tokens ?? 0;
 
       // Only persist results for THIS chunk's real ids (context ids are prefixed "ctx").
       const chunkIds = chunk.map((m) => m.id);
@@ -172,5 +177,5 @@ async function runClassifier(env: Env): Promise<{ chats: number; batches: number
     if (summary) await saveSummary(env.DB, group, summary);
   }
 
-  return { chats: chats.length, batches, incidentals: incidentalsTotal, processed };
+  return { chats: chats.length, batches, incidentals: incidentalsTotal, processed, tokens };
 }
