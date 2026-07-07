@@ -13,12 +13,14 @@ binding = "DB"                 # code accesses it as env.DB
 database_name = "tripops"
 database_id = "fcbbbfd2-eee8-4238-8cb0-3790ecce33a9"
 
-# ── Cron: run the classifier every 6 hours, offset +15 min (00:15 / 06:15 / 12:15 / 18:15 UTC) ──
-# The +15 offset is a cushion: the phone uploads on its own ~30-min cycle, so firing at :15 (not :00)
-# gives the most recent upload time to land in D1 BEFORE the classifier reads. Without it, messages
-# that arrived just before the hour could miss this run and wait a full 6 h for the next one.
+# ── Cron: run the classifier every 6 hours, offset +15 min ──
+# Cloudflare crons are UTC-ONLY (no timezone field). PH is UTC+8, so to fire at PH wall-clock
+# 00:15 / 06:15 / 12:15 / 18:15 we subtract 8h → UTC 16:15 / 22:15 / 04:15 / 10:15 (hours 4,10,16,22).
+#   04:15 UTC = 12:15 PH | 10:15 UTC = 18:15 PH | 16:15 UTC = 00:15 PH | 22:15 UTC = 06:15 PH
+# The +15 offset is a cushion: the phone uploads on its own ~30-min cycle, so firing at :15 gives the
+# most recent upload time to land in D1 BEFORE the classifier reads (else it waits a full 6h).
 [triggers]
-crons = ["15 0,6,12,18 * * *"]
+crons = ["15 4,10,16,22 * * *"]
 
 # ── Secrets (NEVER in this file) — set once each with `wrangler secret put`:
 #      wrangler secret put GROQ_API_KEY     ← your Groq key
