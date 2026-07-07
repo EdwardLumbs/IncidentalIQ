@@ -210,6 +210,65 @@ export async function batchUpsertTrips(
   }
 }
 
+// ── Trip identity binding (plate ↔ container) ────────────────────────
+// A job sheet names BOTH a truck plate and its container — proof they're the SAME trip. We remember
+// that pairing so an incidental reported under a plate collapses under the container (the canonical,
+// client-facing trip id) instead of showing up as a separate trip.
+
+// Load this chat's known alias→canonical map (e.g. NJR7871 → ONEU3027491).
+export async function getTripLinks(DB: D1Database, group: string): Promise<Map<string, string>> {
+  const rs = await DB.prepare(
+    "SELECT alias, canonical FROM trip_links WHERE group_name = ?1",
+  ).bind(group).all();
+  const m = new Map<string, string>();
+  for (const r of rs.results as any[]) m.set(r.alias, r.canonical);
+  return m;
+}
+
+// Remember new alias→canonical pairs (batched, idempotent).
+export async function upsertTripLinks(
+  DB: D1Database, group: string, pairs: { alias: string; canonical: string }[],
+): Promise<void> {
+  const now = new Date().toISOString();
+  const seen = new Set<string>();
+  const stmts: D1PreparedStatement[] = [];
+  for (const { alias, canonical } of pairs) {
+    if (!alias || !canonical || alias === canonical || seen.has(alias)) continue;
+    seen.add(alias);
+    stmts.push(DB.prepare(
+      `INSERT INTO trip_links (group_name, alias, canonical, updated_at) VALUES (?1, ?2, ?3, ?4)
+       ON CONFLICT(group_name, alias) DO UPDATE SET canonical = ?3, updated_at = ?4`,
+    ).bind(group, alias, canonical, now));
+  }
+  for (let i = 0; i < stmts.length; i += STMTS_PER_BATCH) {
+    await DB.batch(stmts.slice(i, i + STMTS_PER_BATCH));
+  }
+}
+
+// Rewrite already-stored rows that used an alias so they point at the canonical id — so a job sheet
+// arriving AFTER an incidental was logged still merges the history (not just future messages).
+export async function applyTripLinks(
+  DB: D1Database, group: string, pairs: { alias: string; canonical: string }[],
+): Promise<void> {
+  const seen = new Set<string>();
+  const stmts: D1PreparedStatement[] = [];
+  for (const { alias, canonical } of pairs) {
+    if (!alias || !canonical || alias === canonical || seen.has(alias)) continue;
+    seen.add(alias);
+    stmts.push(DB.prepare(
+      `UPDATE captured_messages SET trip_reference = ?3, reference_type = 'container_number'
+       WHERE group_name = ?1 AND trip_reference = ?2`,
+    ).bind(group, alias, canonical));
+    stmts.push(DB.prepare(
+      `UPDATE incidentals SET trip_reference = ?2
+       WHERE trip_reference = ?1 AND message_id IN (SELECT id FROM captured_messages WHERE group_name = ?3)`,
+    ).bind(alias, canonical, group));
+  }
+  for (let i = 0; i < stmts.length; i += STMTS_PER_BATCH) {
+    await DB.batch(stmts.slice(i, i + STMTS_PER_BATCH));
+  }
+}
+
 // Persist one chunk's classification: mark all chunk messages classified, and for the
 // incidental-bearing ones set trip fields + insert incidental rows. All writes are batched into
 // DB.batch() calls (few subrequests) instead of one await per row. INSERT OR IGNORE + the UNIQUE
@@ -224,6 +283,11 @@ export async function saveChunkResults(
   let incidentalCount = 0;
   const stmts: D1PreparedStatement[] = [];
 
+  // Canonicalize a plate trip_reference to uppercase so "Mat4846" and "MAT4846" are the SAME trip
+  // (the regex seeds plates uppercased, but Groq may echo one in mixed case → they'd split otherwise).
+  const canonTrip = (ref: string | null, type: string | null) =>
+    ref && type === "plate_number" ? ref.toUpperCase() : ref;
+
   for (const id of chunkIds) {
     const r = byId.get(String(id));
     if (!r) {
@@ -233,17 +297,18 @@ export async function saveChunkResults(
       ).bind(id, now));
       continue;
     }
+    const trip = canonTrip(r.trip_reference, r.reference_type);
     stmts.push(DB.prepare(
       `UPDATE captured_messages SET classified_at = ?2, is_incidental = 1,
          trip_reference = ?3, reference_type = ?4, reference_source = ?5 WHERE id = ?1`,
-    ).bind(id, now, r.trip_reference, r.reference_type, r.reference_source));
+    ).bind(id, now, trip, r.reference_type, r.reference_source));
 
     for (const inc of r.incidentals) {
       stmts.push(DB.prepare(
         `INSERT OR IGNORE INTO incidentals
            (message_id, incidental_type, status, confidence, amount, trip_reference)
          VALUES (?1, ?2, ?3, ?4, NULL, ?5)`,
-      ).bind(id, inc.incidental_type, inc.status, inc.confidence, r.trip_reference));
+      ).bind(id, inc.incidental_type, inc.status, inc.confidence, trip));
       incidentalCount++;
     }
   }
@@ -301,17 +366,27 @@ export async function bumpMetrics(
   return m;
 }
 
+// Normalize a date filter: a bare "2026-07-07" becomes the start (or end) of that UTC day;
+// a full ISO string is passed through. Lets ?since=/&until= accept either form.
+function normDate(s: string, endOfDay = false): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s + (endOfDay ? "T23:59:59.999Z" : "T00:00:00.000Z");
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? s : d.toISOString();
+}
+
+type IncFilter = { trip?: string | null; status?: string | null; group?: string | null; since?: string | null; until?: string | null; limit?: number };
+
 // GET /incidentals — join incidentals to their message, newest first, optional filters.
-export async function queryIncidentals(
-  DB: D1Database,
-  opts: { trip?: string | null; status?: string | null; limit?: number },
-): Promise<any[]> {
+export async function queryIncidentals(DB: D1Database, opts: IncFilter): Promise<any[]> {
   const clauses: string[] = [];
   const binds: any[] = [];
   if (opts.trip) { binds.push(opts.trip); clauses.push(`i.trip_reference = ?${binds.length}`); }
   if (opts.status) { binds.push(opts.status); clauses.push(`i.status = ?${binds.length}`); }
+  if (opts.group) { binds.push(`%${opts.group}%`); clauses.push(`m.group_name LIKE ?${binds.length}`); }
+  if (opts.since) { binds.push(normDate(opts.since)); clauses.push(`m.timestamp >= ?${binds.length}`); }
+  if (opts.until) { binds.push(normDate(opts.until, true)); clauses.push(`m.timestamp <= ?${binds.length}`); }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  binds.push(Math.min(opts.limit ?? 200, 1000));
+  binds.push(Math.min(opts.limit ?? 200, 10000));
 
   const rs = await DB.prepare(
     `SELECT i.id, i.incidental_type, i.status, i.confidence, i.trip_reference,
@@ -321,4 +396,73 @@ export async function queryIncidentals(
      ORDER BY m.timestamp DESC LIMIT ?${binds.length}`,
   ).bind(...binds).all();
   return rs.results as any[];
+}
+
+// GET /incidentals?view=trips — one row per trip: how many incidentals, split confirmed/possible,
+// the distinct types, and the time span. Answers "which trips have incidentals" at a glance.
+export async function queryIncidentalsByTrip(
+  DB: D1Database,
+  opts: { status?: string | null; group?: string | null },
+): Promise<any[]> {
+  const clauses: string[] = [];
+  const binds: any[] = [];
+  if (opts.status) { binds.push(opts.status); clauses.push(`i.status = ?${binds.length}`); }
+  if (opts.group) { binds.push(`%${opts.group}%`); clauses.push(`m.group_name LIKE ?${binds.length}`); }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+
+  const rs = await DB.prepare(
+    `SELECT COALESCE(i.trip_reference, '(unlinked)') AS trip_reference,
+            m.group_name,
+            COUNT(*) AS incidentals,
+            SUM(CASE WHEN i.status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed,
+            SUM(CASE WHEN i.status = 'possible'  THEN 1 ELSE 0 END) AS possible,
+            GROUP_CONCAT(DISTINCT i.incidental_type) AS types,
+            MIN(m.timestamp) AS first_seen, MAX(m.timestamp) AS last_seen
+     FROM incidentals i JOIN captured_messages m ON m.id = i.message_id
+     ${where}
+     GROUP BY i.trip_reference, m.group_name
+     ORDER BY incidentals DESC, last_seen DESC`,
+  ).bind(...binds).all();
+  return rs.results as any[];
+}
+
+// GET /messages — full stored message history: each message PLUS its trip link and any incidentals
+// (type + status) it carries, so one call gives the complete picture (the stored_messages export as
+// an API). incidentals is an array so a message with multiple is fully represented.
+export async function queryMessages(
+  DB: D1Database,
+  opts: { group?: string | null; since?: string | null; until?: string | null; incidental?: string | null; limit?: number },
+): Promise<any[]> {
+  const clauses: string[] = [];
+  const binds: any[] = [];
+  if (opts.group) { binds.push(`%${opts.group}%`); clauses.push(`m.group_name LIKE ?${binds.length}`); }
+  if (opts.since) { binds.push(normDate(opts.since)); clauses.push(`m.timestamp >= ?${binds.length}`); }
+  if (opts.until) { binds.push(normDate(opts.until, true)); clauses.push(`m.timestamp <= ?${binds.length}`); }
+  if (opts.incidental === "1" || opts.incidental === "true") { clauses.push(`m.is_incidental = 1`); }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  binds.push(Math.min(opts.limit ?? 200, 10000));
+
+  // LEFT JOIN so clean messages still return; GROUP_CONCAT rolls a message's incidentals into one
+  // "type:status|type:status" string we split back into an array below.
+  const rs = await DB.prepare(
+    `SELECT m.id, m.source, m.group_name, m.sender, m.message, m.timestamp,
+            m.is_incidental, m.trip_reference, m.reference_type,
+            GROUP_CONCAT(i.incidental_type || ':' || i.status, '|') AS inc_list
+     FROM captured_messages m
+     LEFT JOIN incidentals i ON i.message_id = m.id
+     ${where}
+     GROUP BY m.id
+     ORDER BY m.timestamp DESC LIMIT ?${binds.length}`,
+  ).bind(...binds).all();
+
+  return (rs.results as any[]).map((r) => {
+    const { inc_list, ...rest } = r;
+    const incidentals = inc_list
+      ? String(inc_list).split("|").map((s) => {
+          const [incidental_type, status] = s.split(":");
+          return { incidental_type, status };
+        })
+      : [];
+    return { ...rest, incidentals };
+  });
 }

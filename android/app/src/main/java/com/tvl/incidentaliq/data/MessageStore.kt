@@ -39,8 +39,25 @@ object MessageStore {
     }
     private var loaded = false
 
-    private fun esc(s: String) =
-        s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
+    // JSON string escaping. MUST escape ALL C0 control chars (U+0000–U+001F), not just \n — a raw
+    // TAB (from a pasted manifest) or other control char inside "content" produces invalid JSON that
+    // the backend's request.json() rejects with 400, which (since a failed upload never prunes) jams
+    // the whole upload queue behind one poison message. Learned the hard way on 2026-07-07.
+    private fun esc(s: String): String {
+        val sb = StringBuilder(s.length + 16)
+        for (c in s) {
+            when {
+                c == '\\' -> sb.append("\\\\")
+                c == '"' -> sb.append("\\\"")
+                c == '\n' -> sb.append("\\n")
+                c == '\r' -> sb.append("\\r")
+                c == '\t' -> sb.append("\\t")
+                c < ' ' -> sb.append("\\u").append("%04x".format(c.code))
+                else -> sb.append(c)
+            }
+        }
+        return sb.toString()
+    }
 
     private fun sha256(s: String): String {
         val d = MessageDigest.getInstance("SHA-256").digest(s.toByteArray(Charsets.UTF_8))

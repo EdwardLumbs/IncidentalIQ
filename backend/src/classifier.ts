@@ -88,6 +88,15 @@ container_number (e.g. TXGU5040257), consignee/client name, plate_number, or boo
 message often omits it — infer from the SITUATION SO FAR, the KNOWN TRIPS list, and recent messages.
 Use null if you truly cannot tell.
 
+PLATE NUMBERS ARE THE KEY LINK: a truck's plate/code — 3 letters + 4 digits like NEG5077, MAT4846,
+CAP7500 — is the MOST COMMON trip identifier in field reports. Drivers usually report a delay/problem
+by truck ("Tambay muna si mat4846", "out mip si NEG5077") and almost NEVER repeat the container# once
+a trip is underway. So when an incidental message names no container, LINK IT VIA THE PLATE: use the
+plate mentioned in that message, or the one most recently associated with this driver/situation in
+the SITUATION SO FAR and KNOWN TRIPS list (which now lists plates). Set trip_reference to that plate
+(uppercased) and reference_type "plate_number". Only fall back to null when no plate is inferable at
+all. In situation_summary, always track which plate is where/doing what so later reports still link.
+
 USING THE SENDER: every trip is assigned to a specific DRIVER and HELPER (their names appear on the
 job-sheet/dispatch slip for that trip). The person who posts a message is usually the driver or
 helper working that trip and reporting from the field. So when a message omits the trip reference,
@@ -278,3 +287,9 @@ export async function contentHash(source: string, group: string, message: string
 
 // Container-number regex, for populating the trip registry even without a classification.
 export const CONTAINER_RE = /\b[A-Z]{4}\d{7}\b/g;
+
+// Plate / truck-code regex — 3 letters + 4 digits (e.g. NEG5077, MAT4846, CAP7500, NGT9149).
+// Field reports very often name ONLY the truck ("Tambay muna si mat4846"), never the container, so
+// seeding the trip registry with plates — exactly like CONTAINER_RE does — is what lets those
+// reports link to a trip. Case-insensitive; normalize matches to uppercase before use.
+export const PLATE_RE = /\b[A-Za-z]{3}\d{4}\b/g;

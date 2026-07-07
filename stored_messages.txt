@@ -1,0 +1,186 @@
+TRIP OPS — CAPTURED MESSAGES (Cloudflare D1)   snapshot 2026-07-07 13:05 UTC
+Total: 181 messages   |   Incidentals: 13
+
+ID  | CHAT     | INCID | GROQ VERDICT                | TRIP        | MESSAGE
+----+---------+------+----------------------------+------------+-------------------------------------------------------------
+279 | TVL-DOC  | no    | -                           | -           | Naka verify nako SA b.point
+280 | FUEL     | no    | -                           | -           | sent a photo
+281 | FUEL     | no    | -                           | -           | Bunso joined FUEL REFILLING TOTAL
+282 | TVL-DOC  | no    | -                           | -           | tapos napo CAP7500 mag sauli sa oceanic
+283 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+284 | TVL-DOC  | no    | -                           | -           | Sent 2 photos.
+285 | EXCL-DRV | no    | -                           | -           | [image]
+286 | EXCL-DRV | no    | -                           | -           | Guys paki save nyo nalang tong bagong number ni kuya Buboy  para kung 
+287 | TVL-DOC  | no    | -                           | -           | 7pm palang tinatawag SA de20
+288 | TVL-DOC  | no    | -                           | -           | 7pm palang tinatawag SA de20
+289 | TVL-DOC  | no    | -                           | -           | TVL TRUCKING SERVICES IMPORT LOADED MIP  DRIVER: R.dumasis HELPER: L.l
+290 | TVL-DOC  | no    | -                           | -           | TVL TRUCKING SERVICES IMPORT LOADED MIP  DRIVER: R.dumasis HELPER: L.l
+291 | TVL-DOC  | no    | -                           | -           | Naka pasok MIP
+292 | TVL-DOC  | no    | -                           | -           | Nakapasok napo Mip NDZ
+293 | TVL-DOC  | no    | -                           | -           | naka pila napo ng hulding si CAP7500
+294 | TVL-DOC  | no    | -                           | -           | TVL TRUCKING SERVICES IMPORT LOADED MIP ROYAL CARGO  DRIVER: BRYLE PAR
+295 | TVL-DOC  | no    | -                           | -           | TVL TRUCKING SERVICES IMPORT LOADED MIP ROYAL CARGO  DRIVER: BRYLE PAR
+296 | TVL-DOC  | no    | -                           | -           | Nakalabas napo NDZ
+297 | TVL-DOC  | no    | -                           | -           | Start unload na po si NEG5077
+298 | TVL-DOC  | no    | -                           | -           | TVL TRUCKING SERVICES IMPORT LOADED MIP ROYAL CARGO  DRIVER: BRYLE PAR
+299 | TVL-DOC  | no    | -                           | -           | Tapos napo Kami mag sauli SA b.point
+300 | TVL-DOC  | no    | -                           | -           | Sent 2 photos.
+301 | TVL-DOC  | no    | -                           | -           | Finish unload
+302 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+303 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+304 | TVL-DOC  | no    | -                           | -           | IMPORT LOADED  TVL TRUCKING  DATE:07/06/26 SHIPPING LINE:MAESK   DRIVE
+305 | TVL-DOC  | no    | -                           | -           | IMPORT LOADED  TVL TRUCKING  DATE:07/06/26 SHIPPING LINE:MAESK   DRIVE
+306 | TVL-DOC  | no    | -                           | -           | status po Namen Deretso Napo ba ito ILT
+307 | TVL-DOC  | no    | -                           | -           | Tingnan mo d. O mo baka nag ka palit tayu
+308 | TVL-DOC  | no    | -                           | -           | naka hiwalay saken
+309 | TVL-DOC  | no    | -                           | -           | Tama container #
+310 | TVL-DOC  | no    | -                           | -           | Mali
+311 | TVL-DOC  | no    | -                           | -           | Sabi ko nag ka palit ng dokomento kanina pa
+312 | TVL-DOC  | no    | -                           | -           | kita Tayo Delpam
+313 | TVL-DOC  | no    | -                           | -           | delpan
+314 | EXCL-DRV | no    | -                           | -           | Sent 3 photos.
+315 | TVL-DOC  | no    | -                           | -           | out mip OTW CLARK pampanga
+316 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+317 | TVL-DOC  | no    | -                           | -           | Naka pila na po si neg papasok sa tacuma
+318 | TVL-DOC  | no    | -                           | -           | pila napo Papasok ILT NBQ
+319 | TVL-DOC  | no    | -                           | -           | Tambay muna SA holding si mat4846
+320 | TVL-DOC  | no    | -                           | -           | Nakalabas Napo ILT NBQ
+321 | TVL-DOC  | no    | -                           | -           | Status Po namen Mam
+322 | TVL-DOC  | no    | -                           | -           | Naka labas na po sa tacuma si neg 5077
+323 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+324 | TVL-DOC  | no    | -                           | -           | Waiting po si neg sa advice nyo mam andito kami nka park sa south
+325 | TVL-DOC  | no    | -                           | -           | SEND KO SA INYO CONATAINER NO
+326 | TVL-DOC  | no    | -                           | -           | Otw Na Kame
+327 | FUEL     | no    | -                           | -           | sent a photo
+328 | FUEL     | no    | -                           | -           | Bunso joined FUEL REFILLING TOTAL
+329 | TVL-DOC  | no    | -                           | -           | 👍
+330 | FUEL     | no    | -                           | -           | Good Morning As of July 07 6am Available balance ₱66,603.46 Thank you.
+331 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+332 | TVL-DOC  | no    | -                           | -           | Kakapasok lang Po ng CIP1 nag sleep Po sa petron slex Bago nag exit ng
+333 | TVL-DOC  | no    | -                           | -           | 📣 • @everyone pasend nga mga DO nyo guys
+334 | EXCL-DRV | no    | -                           | -           | Sent a photo.
+335 | TVL-DOC  | no    | -                           | -           | .out MIP
+336 | TVL-DOC  | no    | -                           | -           | 📣 • @everyone pasend nga mga DO nyo guys
+337 | TVL-DOC  | no    | -                           | -           | SEGU2978251 -> 1X20GP -> KMTC -> CALAMBA NBQ4410   SEGU2525548 -> 1X20GP -> KMTC -> CALA
+338 | TVL-DOC  | no    | -                           | -           | SEGU2978251 -> 1X20GP -> KMTC -> CALAMBA NBQ4410   SEGU2525548 -> 1X20GP -> KMTC -> CALA
+339 | EXCL-DRV | no    | -                           | -           | [image]
+340 | EXCL-DRV | no    | -                           | -           | SEGU2978251 -> 1X20GP -> KMTC -> CALAMBA NBQ4410   SEGU2525548 -> 1X20GP -> KMTC -> CALA
+341 | TVL-DOC  | no    | -                           | -           | Guys check nyo yung assigned container nyo... @Jhoseph D. Ariate  back
+342 | TVL-DOC  | no    | -                           | -           | @Cel Ed  flat truck ang ikarga nyo ganun din picturan nyo din
+343 | TVL-DOC  | no    | -                           | -           | @Manuelito Meridor  d40 kayo, need din ng pictures para mapre advise
+344 | TVL-DOC  | no    | -                           | -           | Kopya bamga helpers?
+345 | TVL-DOC  | no    | -                           | -           | Copy Po Mam
+346 | TVL-DOC  | no    | -                           | -           | Copy po mam
+347 | TVL-DOC  | no    | -                           | -           | Proceed na kayo sa The Rigging Calamba
+348 | TVL-DOC  | no    | -                           | -           | On the way na po si NEG5077 sa the Rigging Calamba
+349 | TVL-DOC  | no    | -                           | -           | Sent 16 photos.
+350 | TVL-DOC  | no    | -                           | -           | Opoh mam
+351 | TVL-DOC  | no    | -                           | -           | Ok napo ung mga ilaw mam nakabitan napo nih kua khelby pati sa tractor
+352 | TVL-DOC  | no    | -                           | -           | Alis na kayo punta na kayo sa The Rigging
+353 | TVL-DOC  | no    | -                           | -           | Opoh mam calamba un mam
+354 | TVL-DOC  | no    | -                           | -           | @Jasheim Escaño Rubio  ano bang mahirap sa pag send ng arrival report?
+355 | TVL-DOC  | no    | -                           | -           | Opoh mam calamba un mam
+356 | TVL-DOC  | no    | -                           | -           | Kanina pa kayong 8 nag arrived pero hanggang ngaun d mo pa din maesend
+357 | TVL-DOC  | no    | -                           | -           | Dito Napo Kame
+358 | TVL-DOC  | no    | -                           | -           | 👍
+359 | TVL-DOC  | no    | -                           | -           | sino Daw Po Contact Person Dito
+360 | TVL-DOC  | no    | -                           | -           | Relax wait for me sep
+361 | TVL-DOC  | no    | -                           | -           | Dito pa Den Po Kame Tabing Kalsada Dipa Pinapapasok May Ginagawa Pa Sa
+362 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+363 | TVL-DOC  | no    | -                           | -           | Saang tabing kalsada? Sa Calamba na ba yan?
+364 | TVL-DOC  | no    | -                           | -           | opo Mam
+365 | TVL-DOC  | no    | -                           | -           | Ang bilis ah
+366 | TVL-DOC  | YES   | overtime_charges/possible   | -           | Baka ma towing kayo dyan or ma obstruction
+367 | TVL-DOC  | no    | -                           | -           | Bakit d pa kayo dumeretso?
+368 | TVL-DOC  | no    | -                           | -           | Cel Ed sent a photo.
+369 | TVL-DOC  | no    | -                           | -           | dipa Po Pinapasok May Gonagawa Pa Po sa Loob Ee Mam
+370 | TVL-DOC  | no    | -                           | -           | [image]
+371 | TVL-DOC  | YES   | overtime_charges/possible   | -           | Maya maya lang daw mam pag labas ho ng truck nila ay pwd na ho kami pu
+372 | TVL-DOC  | no    | -                           | -           | IMPORT: LOADED MIP TVL TRUCKING SERVICES  DRIVER:  R.RUBIO HELPER:  J.
+373 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services    Date:07-07-26 Zise#1x20 Chassis:#09 Dr
+374 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+375 | TVL-DOC  | YES   | overtime_charges/possible   | -           | Nag Dadatingan Pa Po Yung Mga Empty Nila Dito Na Platrack Kaya Di Pa D
+376 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+377 | EXCL-DRV | no    | -                           | -           | Sent a photo.
+378 | EXCL-DRV | no    | -                           | -           | 👏
+379 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+380 | TVL-DOC  | no    | -                           | -           | andito Napo Mga Enforcer Mam
+381 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services    Date:07-07-26 Zise#1x20 Chassis:#09 Dr
+382 | TVL-DOC  | no    | -                           | -           | Mat4846 out mip
+383 | TVL-DOC  | no    | -                           | -           | Otw mat4846 warehouse
+384 | TVL-DOC  | YES   | overtime_charges/possible   | -           | Walang kwenta @Jhoseph D. Ariate nanahimik na kami dito dinamay nyo pa
+385 | TVL-DOC  | no    | -                           | -           | Sinong taba🤔
+386 | TVL-DOC  | no    | -                           | -           | Enforcer
+387 | TVL-DOC  | no    | -                           | -           | pinag Sasabi mo?
+388 | TVL-DOC  | no    | -                           | -           | dinamay Ka?
+389 | TVL-DOC  | no    | -                           | -           | 👍
+390 | TVL-DOC  | YES   | overtime_charges/possible   | -           | parehas Kamo Tayo Naka Parking Dyan Di ko Na Kasalanan Na Ma Sita Din 
+391 | TVL-DOC  | YES   | overtime_charges/possible   | -           | Paharang Harang Yan Sya dyan Alam Nya Malaking Truck Ang Iikot apaipet
+392 | TVL-DOC  | no    | -                           | -           | alam Mo Na Pampakalma Dyan Kay Taba Mukhang Pera Yan
+393 | TVL-DOC  | no    | -                           | -           | Naka pasok na truck ko huwag ka munang babalik dito andito pa si taba 
+394 | TVL-DOC  | no    | -                           | -           | Naunahan Nyu Pa Kame Hanep
+395 | TVL-DOC  | no    | -                           | -           | Wag kayo mag away Dyan isang trucking Lang kayo magkasama kayo
+396 | TVL-DOC  | no    | -                           | -           | ganyan talaga ang buhay wag nakayong mag sisihan
+397 | TVL-DOC  | YES   | overtime_charges/possible   | -           | papasok Na Dapat Kame Ee Pinaalis Na Kame Ni Taba
+398 | TVL-DOC  | YES   | overtime_charges/possible   | -           | bagal Kasi Pumasok Ng Rigging
+399 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+400 | TVL-DOC  | no    | -                           | -           | ikot Ikot Kame Neto Dito
+401 | TVL-DOC  | no    | -                           | -           | maluwag pa Ata Dyan Ee
+402 | TVL-DOC  | no    | -                           | -           | kasya Pa Kame
+403 | TVL-DOC  | no    | -                           | -           | Wag kayo pumayag maunahan Ng ibang trucking
+404 | TVL-DOC  | no    | -                           | -           | Relax ka muna pag hindi ka maka pasok tuloyan ka ni taba galit na gali
+405 | TVL-DOC  | no    | -                           | -           | Russel Diloy sent a photo.
+406 | TVL-DOC  | no    | -                           | -           | Dapat kasi nag pa iwan ka nalang di kana sumama sa pag ikot ni dondon
+407 | TVL-DOC  | no    | -                           | -           | Dapat kasi nag pa iwan ka nalang di kana sumama sa pag ikot ni dondon
+408 | TVL-DOC  | no    | -                           | -           | Maki usap ka sa guard sabihan mo bilhan mo sya mamaya ng yose  segurad
+409 | TVL-DOC  | no    | -                           | -           | @Lemmar Lasto pasend ng arrival mo
+410 | TVL-DOC  | no    | -                           | -           | @Lemmar Lasto pasend ng arrival mo
+411 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+412 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+413 | TVL-DOC  | YES   | overtime_charges/possible   | ONEU3027491 | TVL TRUCKING SERVICES IMPORT LOADED MIP  DRIVER: R.dumasis HELPER: L.l
+414 | TVL-DOC  | no    | -                           | -           | NGT9149 gate in mip
+415 | TVL-DOC  | no    | -                           | -           | IMPORT: LOADED MIP TVL TRUCKING SERVICES  DRIVER:  R.RUBIO HELPER:  J.
+416 | TVL-DOC  | no    | -                           | -           | Sent a video.
+417 | TVL-DOC  | no    | -                           | -           | WAla naman dyan mam ang TEXU 0037689
+418 | TVL-DOC  | no    | -                           | -           | Sent 17 photos.
+419 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+420 | FUEL     | no    | -                           | -           | sent a photo
+421 | FUEL     | no    | -                           | -           | Ano ba yan pinaglalaruan lang talaga kami ng gobyerno na to
+422 | TVL-DOC  | no    | -                           | -           | Sent 17 photos.
+423 | TVL-DOC  | no    | -                           | -           | Sent a photo.
+424 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+425 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+426 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+427 | TVL-DOC  | YES   | overtime_charges/possible   | ONEU3027491 | TVL TRUCKING SERVICES IMPORT LOADED MIP  DRIVER: R.dumasis HELPER: L.l
+428 | TVL-DOC  | no    | -                           | -           | Sent 17 photos.
+429 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+430 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+431 | TVL-DOC  | YES   | overtime_charges/possible   | -           | Mam san ho kami mag hihintay di na pwd mag tagal kmi dito pinapa alis 
+432 | TVL-DOC  | no    | -                           | -           | Nasaan na ang pictures mo
+433 | EXCL-DRV | no    | -                           | -           | Pinapaales n kmi dtu madam
+434 | EXCL-DRV | no    | -                           | -           | Abala n daw kmi dyu maliit lng lugar dtu sa regging
+435 | EXCL-DRV | no    | -                           | -           | Lalabas n kmi dtu
+436 | EXCL-DRV | no    | -                           | -           | My mga truck daw cla prating
+437 | EXCL-DRV | no    | -                           | -           | CGE UWI MUNA KAYO GARAHE
+438 | EXCL-DRV | no    | -                           | -           | 👏
+439 | TVL-DOC  | YES   | overtime_charges/possible   | -           | pinapalabas Napo Kame Dito Sa Rigging Mam
+440 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+441 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+442 | TVL-DOC  | no    | -                           | -           | Sent 3 photos.
+443 | TVL-DOC  | no    | -                           | -           | @Christian Rex Pielagopag tapos pasend agd ng  picture ng empty ha
+444 | EXCL-DRV | no    | -                           | -           | Ok madam
+445 | TVL-DOC  | no    | -                           | -           | Import  TVLtucking  Services  Mat4846 1X20  Date:7-7-26  Chassi#07 Dri
+446 | TVL-DOC  | no    | -                           | -           | Sent 13 photos.
+447 | TVL-DOC  | no    | -                           | -           | Sent 2 photos.
+448 | TVL-DOC  | no    | -                           | -           | 👍
+449 | EXCL-DRV | no    | -                           | -           | Mga Kasama may truck ban ba Dito sa carmona pa puntang Pala Pala?
+450 | TVL-DOC  | no    | -                           | -           | NGT9149 out mip otw CIPI
+451 | EXCL-DRV | no    | -                           | -           | Wala
+452 | EXCL-DRV | no    | -                           | -           | Salamat
+453 | EXCL-DRV | no    | -                           | -           | Dru kmi open kanal tambay
+454 | TVL-DOC  | no    | -                           | -           | Sent a sticker.
+455 | TVL-DOC  | YES   | overtime_charges/possible   | -           | ma,am kumosta po kami dito wala papoba kaming biyahe po
+456 | EXCL-DRV | no    | -                           | -           | Sent a photo.
+457 | TVL-DOC  | no    | -                           | -           | Zero visibility MNL lakas ng ulan hangin
+458 | TVL-DOC  | no    | -                           | -           | TVL TRUCKING SERVICES IMPORT LOADED MIP YATARI EXPRESS PHILS INC.  DRI
+459 | TVL-DOC  | no    | -                           | -           | TVL TRUCKING SERVICES IMPORT LOADED MIP YATARI EXPRESS PHILS INC.  DRI
