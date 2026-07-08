@@ -78,6 +78,13 @@ RULES:
 - NOT incidentals at all (return an empty array): pure coordination — bookings, schedules/"tabs",
   gate passes, manifests, asking for truck location/address/details, job-sheet templates, plain
   status updates, driver/helper edits.
+- A ROUTINE JOB SHEET / DISPATCH SLIP is NOT an incidental. These announce a trip and look like:
+  "IMPORT/EXPORT LOADED", "TVL TRUCKING SERVICES", a date, size (1x20/1x40), chassis #, a container#
+  or plate, and DRIVER/HELPER names. Naming a CY/port/warehouse (MIP, MICT, etc.) or the word
+  "LOADED"/"storage yard" in such a slip does NOT by itself mean lolo_charges, storage_fees, or
+  safekeeping. Only flag those when the message EXPLICITLY says the container was lifted/lowered,
+  grounded, stored, or charged — not merely that a trip passed through a location. When a message is
+  just a job sheet, return an empty incidentals array (but its trip_reference is still useful).
 
 MULTIPLE INCIDENTALS: one message can mention more than one incidental type (e.g. "we rented a
 chassis because we had to bobtail" = chassis_rental AND bobtail). List EVERY distinct type you
@@ -286,7 +293,13 @@ export async function contentHash(source: string, group: string, message: string
 }
 
 // Container-number regex, for populating the trip registry even without a classification.
-export const CONTAINER_RE = /\b[A-Z]{4}\d{7}\b/g;
+// Tolerates a space between the 4-letter owner code and the 7 digits — job sheets often write
+// "IAAU 2887671" (or "IAAU2887671"). Normalize matches with normContainer() so both spellings
+// collapse to one canonical id.
+export const CONTAINER_RE = /\b[A-Z]{4}\s?\d{7}\b/g;
+
+// Canonicalize a raw container match: uppercase + strip the optional space ("IAAU 2887671" → "IAAU2887671").
+export const normContainer = (s: string): string => s.toUpperCase().replace(/\s+/g, "");
 
 // Plate / truck-code regex — 3 letters + 4 digits (e.g. NEG5077, MAT4846, CAP7500, NGT9149).
 // Field reports very often name ONLY the truck ("Tambay muna si mat4846"), never the container, so

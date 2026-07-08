@@ -45,6 +45,16 @@ class NotificationListener : NotificationListenerService() {
         val groupCandidates = listOf(convTitle, subText, title)
         val groupName = convTitle.ifEmpty { subText }.ifEmpty { title }
 
+        // Messenger/Viber group notifications put "GroupName: PersonName" in android.title. Strip the
+        // group prefix so we store the actual person (the sender→driver/helper trip hint depends on it,
+        // and it must match the accessibility path, which reports the bare name). Falls back to the raw
+        // title when there's no group prefix (1-on-1, or title already just the sender).
+        val sender = run {
+            val prefix = "$groupName: "
+            if (groupName.isNotEmpty() && title.startsWith(prefix)) title.removePrefix(prefix).trim().ifEmpty { title }
+            else title
+        }
+
         val app = if (sbn.packageName == "com.viber.voip") "VIBER" else "MESSENGER"
         val truncated = content.length >= 95
         val imageLike = content in MEDIA_PREVIEWS
@@ -58,7 +68,7 @@ class NotificationListener : NotificationListenerService() {
         val tracked = Config.isGroupTracked(this, app, groupCandidates)
 
         AppLog.write(TAG, "─── NEW NOTIF ─── $app  id=${sbn.id}")
-        AppLog.write(TAG, "  sender=\"$title\"  group=\"$groupName\"  truncated=$truncated  image=$imageLike  noise=$isNoise  tracked=$tracked")
+        AppLog.write(TAG, "  sender=\"$sender\"  group=\"$groupName\"  truncated=$truncated  image=$imageLike  noise=$isNoise  tracked=$tracked")
         AppLog.write(TAG, "  content=\"${content.take(110)}\"")
 
         when {
@@ -77,7 +87,7 @@ class NotificationListener : NotificationListenerService() {
             else -> {
                 // Short, full text already in the notification — store it directly.
                 AppLog.write(TAG, "  ACTION: full content from notification — stored directly")
-                MessageStore.save(this, CapturedMessage(app, groupName, title, content, false, viaAccessibility = false))
+                MessageStore.save(this, CapturedMessage(app, groupName, sender, content, false, viaAccessibility = false))
             }
         }
     }

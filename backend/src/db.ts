@@ -33,12 +33,25 @@ function normalizeSource(s: string): string {
   return v || "unknown";
 }
 
-function toIso(t?: string): string {
-  if (!t) return new Date().toISOString();
-  // Phone writes "2026-07-02T10:00:00" (no zone) — treat as UTC.
-  const s = /[zZ]|[+-]\d{2}:?\d{2}$/.test(t) ? t : `${t}Z`;
+// ── Time: the WHOLE system stores + displays Philippine time (UTC+8), never UTC. ──
+// Every stored timestamp is a PH wall-clock ISO string like "2026-07-08T20:56:01+08:00".
+const PH_OFFSET_MS = 8 * 3600_000;
+const pad2 = (n: number) => String(n).padStart(2, "0");
+// Format an epoch (ms) as a PH wall-clock ISO string. Shift by +8h then read UTC getters so the
+// digits are PH local time; the "+08:00" makes it unambiguous (and still reads as PH, not UTC).
+export function phFromEpoch(ms: number): string {
+  const d = new Date(ms + PH_OFFSET_MS);
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}T` +
+         `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())}+08:00`;
+}
+export function nowPh(): string { return phFromEpoch(Date.now()); }
+// Normalize any incoming timestamp to a PH ISO string. The phone now sends PH (with +08:00); a bare
+// no-zone string is also treated as PH wall-clock (NOT UTC — that was the old clamp bug).
+function toPh(t?: string | null): string {
+  if (!t) return nowPh();
+  const s = /[zZ]|[+-]\d{2}:?\d{2}$/.test(t) ? t : `${t}+08:00`;
   const d = new Date(s);
-  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+  return isNaN(d.getTime()) ? nowPh() : phFromEpoch(d.getTime());
 }
 
 interface PreparedMsg {
@@ -55,7 +68,7 @@ export async function insertMessages(
   msgs: IncomingMessage[],
 ): Promise<{ inserted: number; skipped: number }> {
   let inserted = 0, skipped = 0;
-  const now = new Date().toISOString();
+  const now = nowPh();
   const nowMs = Date.now();
 
   // 1) Normalize + validate + hash. Clamp a wild timestamp to server time so a bad/spoofed ts
@@ -67,9 +80,9 @@ export async function insertMessages(
     const message = (m.message ?? m.content ?? "").toString();
     if (!group || !message) { skipped++; continue; }
 
-    let tsMs = new Date(toIso(m.timestamp ?? m.ts)).getTime();
+    let tsMs = new Date(toPh(m.timestamp ?? m.ts)).getTime();
     if (!isFinite(tsMs) || tsMs > nowMs + 3_600_000 || tsMs < nowMs - 2 * 86_400_000) tsMs = nowMs;
-    const ts = new Date(tsMs).toISOString();
+    const ts = phFromEpoch(tsMs);
     const rawNotif = m.raw_notif ?? (m.via_accessibility ? 0 : 1);
     const hash = await contentHash(source, group, message);
     prepared.push({ source, group, sender: m.sender ?? null, message, image_url: m.image_url ?? null, ts, tsMs, rawNotif, hash });
@@ -79,7 +92,7 @@ export async function insertMessages(
   // 2) ONE bulk lookup of existing (hash, timestamp) for all candidate hashes, bounded to the
   //    earliest relevant window so we don't drag back the whole table for a common hash.
   const minTsMs = Math.min(...prepared.map((p) => p.tsMs)) - DEDUP_WINDOW_MS;
-  const loIso = new Date(minTsMs).toISOString();
+  const loIso = phFromEpoch(minTsMs); // PH-format bound so string compare vs stored PH timestamps is chronological
   const uniqueHashes = [...new Set(prepared.map((p) => p.hash))];
   const seenTimes = new Map<string, number[]>(); // hash → [tsMs, ...] already present
 
@@ -171,7 +184,7 @@ export async function getSummary(DB: D1Database, group: string): Promise<string 
 
 // Recent trips for a chat (registry fed into the prompt). Capped + freshness-filtered.
 export async function getTrips(DB: D1Database, group: string, limit = 40, staleDays = 21): Promise<TripRef[]> {
-  const cutoff = new Date(Date.now() - staleDays * 86400_000).toISOString();
+  const cutoff = phFromEpoch(Date.now() - staleDays * 86400_000);
   const rs = await DB.prepare(
     `SELECT trip_reference, reference_type, driver, helper FROM trips
      WHERE group_name = ?1 AND (last_seen IS NULL OR last_seen >= ?2)
@@ -181,7 +194,7 @@ export async function getTrips(DB: D1Database, group: string, limit = 40, staleD
 }
 
 export async function saveSummary(DB: D1Database, group: string, summary: string): Promise<void> {
-  const now = new Date().toISOString();
+  const now = nowPh();
   await DB.prepare(
     `INSERT INTO chat_state (group_name, situation_summary, updated_at) VALUES (?1, ?2, ?3)
      ON CONFLICT(group_name) DO UPDATE SET situation_summary = ?2, updated_at = ?3`,
@@ -229,7 +242,7 @@ export async function getTripLinks(DB: D1Database, group: string): Promise<Map<s
 export async function upsertTripLinks(
   DB: D1Database, group: string, pairs: { alias: string; canonical: string }[],
 ): Promise<void> {
-  const now = new Date().toISOString();
+  const now = nowPh();
   const seen = new Set<string>();
   const stmts: D1PreparedStatement[] = [];
   for (const { alias, canonical } of pairs) {
@@ -277,8 +290,9 @@ export async function saveChunkResults(
   DB: D1Database,
   chunkIds: number[],
   results: BatchResult[],
+  tripStamp?: Map<number, { ref: string; type: string }>,
 ): Promise<{ incidentals: number }> {
-  const now = new Date().toISOString();
+  const now = nowPh();
   const byId = new Map(results.map((r) => [String(r.id), r]));
   let incidentalCount = 0;
   const stmts: D1PreparedStatement[] = [];
@@ -290,18 +304,31 @@ export async function saveChunkResults(
 
   for (const id of chunkIds) {
     const r = byId.get(String(id));
+    const stamp = tripStamp?.get(Number(id));
     if (!r) {
-      // Clean message — just mark it processed.
-      stmts.push(DB.prepare(
-        "UPDATE captured_messages SET classified_at = ?2, is_incidental = 0 WHERE id = ?1",
-      ).bind(id, now));
+      // Clean message (no incidental). Still stamp its trip_reference from the container/plate regex
+      // so plain job sheets / status updates link to their trip — not only incidental-bearing rows.
+      if (stamp) {
+        stmts.push(DB.prepare(
+          `UPDATE captured_messages SET classified_at = ?2, is_incidental = 0,
+             trip_reference = ?3, reference_type = ?4, reference_source = 'regex' WHERE id = ?1`,
+        ).bind(id, now, stamp.ref, stamp.type));
+      } else {
+        stmts.push(DB.prepare(
+          "UPDATE captured_messages SET classified_at = ?2, is_incidental = 0 WHERE id = ?1",
+        ).bind(id, now));
+      }
       continue;
     }
-    const trip = canonTrip(r.trip_reference, r.reference_type);
+    // Prefer Groq's trip reference; fall back to the regex stamp when Groq gave none.
+    let trip = canonTrip(r.trip_reference, r.reference_type);
+    let refType = r.reference_type;
+    let refSource = r.reference_source;
+    if (!trip && stamp) { trip = stamp.ref; refType = stamp.type; refSource = "regex"; }
     stmts.push(DB.prepare(
       `UPDATE captured_messages SET classified_at = ?2, is_incidental = 1,
          trip_reference = ?3, reference_type = ?4, reference_source = ?5 WHERE id = ?1`,
-    ).bind(id, now, trip, r.reference_type, r.reference_source));
+    ).bind(id, now, trip, refType, refSource));
 
     for (const inc of r.incidentals) {
       stmts.push(DB.prepare(
@@ -326,7 +353,7 @@ export async function setSystemStatus(DB: D1Database, key: string, value: string
   await DB.prepare(
     `INSERT INTO system_status (key, value, updated_at) VALUES (?1, ?2, ?3)
      ON CONFLICT(key) DO UPDATE SET value = ?2, updated_at = ?3`,
-  ).bind(key, value, new Date().toISOString()).run();
+  ).bind(key, value, nowPh()).run();
 }
 
 export async function getSystemStatus(DB: D1Database): Promise<Record<string, { value: string; updated_at: string }>> {
@@ -361,17 +388,17 @@ export async function bumpMetrics(
   m.total_tokens += delta.tokens;
   m.total_incidentals += delta.incidentals;
   m.total_processed += delta.processed;
-  m.last_run_at = new Date().toISOString();
+  m.last_run_at = nowPh();
   await setSystemStatus(DB, "metrics", JSON.stringify(m));
   return m;
 }
 
-// Normalize a date filter: a bare "2026-07-07" becomes the start (or end) of that UTC day;
-// a full ISO string is passed through. Lets ?since=/&until= accept either form.
+// Normalize a date filter to a PH bound: a bare "2026-07-07" becomes the start (or end) of that PH
+// day; a full datetime is normalized to PH. Lets ?since=/&until= accept either form. Stored
+// timestamps are PH "...+08:00" strings, so these bounds must be too for the string compare to hold.
 function normDate(s: string, endOfDay = false): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s + (endOfDay ? "T23:59:59.999Z" : "T00:00:00.000Z");
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? s : d.toISOString();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s + (endOfDay ? "T23:59:59+08:00" : "T00:00:00+08:00");
+  return toPh(s);
 }
 
 type IncFilter = { trip?: string | null; status?: string | null; group?: string | null; since?: string | null; until?: string | null; limit?: number };

@@ -7,6 +7,7 @@ import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /** One captured message, from either a notification or an accessibility read. */
 data class CapturedMessage(
@@ -25,7 +26,13 @@ object MessageStore {
     private const val DEDUP_CAP = 500              // remember the last N message keys
     private const val DEDUP_WINDOW_MS = 10 * 60 * 1000L  // collapse repeats seen within 10 min
     private const val MAX_CONTENT = 4000           // cap a pathological message so one line/upload can't explode
-    private val iso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
+    // The whole system runs on Philippine time. Emit PH wall-clock WITH the "+08:00" offset
+    // (e.g. "2026-07-08T20:56:01+08:00") — the offset is REQUIRED so the backend parses the instant
+    // correctly (a bare no-zone string was misread as UTC → looked 8h in the future → the backend's
+    // "wild timestamp" clamp overwrote every message's time, collapsing batches. Learned 2026-07-08).
+    private val iso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("Asia/Manila")
+    }
     private fun file(ctx: Context) = File(ctx.filesDir, "captured_messages.jsonl")
     private fun dedupFile(ctx: Context) = File(ctx.filesDir, "dedup_seen.tsv")
 

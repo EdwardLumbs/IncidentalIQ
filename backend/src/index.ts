@@ -2,13 +2,13 @@
 //   fetch()     → REST API:  POST /messages  (phone upload) | GET /incidentals (dashboard)
 //   scheduled() → cron every 6h (+15m): classify unclassified messages with Groq, per chat, batched.
 import {
-  classifyBatch, CONTAINER_RE, PLATE_RE, type BatchMessage,
+  classifyBatch, CONTAINER_RE, PLATE_RE, normContainer, type BatchMessage,
 } from "./classifier.js";
 import {
   insertMessages, chatsWithUnclassified, unclassifiedFor, getSummary, getTrips,
   saveSummary, saveChunkResults, batchUpsertTrips, queryIncidentals, queryIncidentalsByTrip,
   queryMessages, setSystemStatus, getSystemStatus, bumpMetrics,
-  getTripLinks, upsertTripLinks, applyTripLinks,
+  getTripLinks, upsertTripLinks, applyTripLinks, nowPh,
 } from "./db.js";
 
 export interface Env {
@@ -135,7 +135,7 @@ export default {
     ctx.waitUntil(
       runClassifier(env)
         .then(async (r) => {
-          await setSystemStatus(env.DB, "last_cron", JSON.stringify({ ok: true, ...r, at: new Date().toISOString() }));
+          await setSystemStatus(env.DB, "last_cron", JSON.stringify({ ok: true, ...r, at: nowPh() }));
           // Accumulate lifetime totals (cron count, batches, Groq tokens, incidentals) for /health.
           const totals = await bumpMetrics(env.DB, {
             batches: r.batches, tokens: r.tokens, incidentals: r.incidentals, processed: r.processed,
@@ -145,13 +145,27 @@ export default {
         .catch(async (e) => {
           // Record the failure so it's visible at /health instead of vanishing silently.
           const msg = String(e?.message ?? e);
-          await setSystemStatus(env.DB, "last_cron", JSON.stringify({ ok: false, error: msg, at: new Date().toISOString() }))
+          await setSystemStatus(env.DB, "last_cron", JSON.stringify({ ok: false, error: msg, at: nowPh() }))
             .catch(() => {});
           console.error("cron FAILED:", msg);
         }),
     );
   },
 };
+
+// Extract the single trip identity a message names — a container# (canonical), or a plate resolved
+// to its bound container when the binding is known, else the bare plate. Returns null when the
+// message names ZERO or MORE THAN ONE distinct trip (a multi-container manifest is ambiguous), so a
+// stamp never mislabels a row. Used to link plain job-sheet / status messages, not just incidentals.
+function stampFor(message: string, links: Map<string, string>): { ref: string; type: string } | null {
+  const conts = [...new Set([...message.matchAll(CONTAINER_RE)].map((x) => normContainer(x[0])))];
+  const plates = [...new Set([...message.matchAll(PLATE_RE)].map((x) => x[0].toUpperCase()))];
+  const resolved = [...new Set([...conts, ...plates.map((p) => links.get(p) ?? p)])];
+  if (resolved.length !== 1) return null;
+  const ref = resolved[0];
+  const type = /^[A-Z]{4}\d{7}$/.test(ref) ? "container_number" : "plate_number";
+  return { ref, type };
+}
 
 // Core classification pass: for each chat with unclassified messages, batch → Groq → persist.
 // Bounded to MAX_MSGS_PER_RUN messages total so a big backlog can't exceed the Worker's
@@ -181,7 +195,7 @@ async function runClassifier(env: Env): Promise<{ chats: number; batches: number
     const newPairs: { alias: string; canonical: string }[] = [];
     for (const m of msgs) {
       const plates = [...new Set([...m.message.matchAll(PLATE_RE)].map((x) => x[0].toUpperCase()))];
-      const conts = [...new Set([...m.message.matchAll(CONTAINER_RE)].map((x) => x[0].toUpperCase()))];
+      const conts = [...new Set([...m.message.matchAll(CONTAINER_RE)].map((x) => normContainer(x[0])))];
       // ONLY a real job sheet — EXACTLY one plate + one container — is a trustworthy binding. A
       // multi-container manifest lists many containers plus warehouse codes that look like plates;
       // binding those wrongly merges unrelated trips (learned the hard way: NEG5077 → SEGU2978251).
@@ -227,18 +241,27 @@ async function runClassifier(env: Env): Promise<{ chats: number; batches: number
         r.reference_type = resolved.type;
       }
 
-      const saved = await saveChunkResults(env.DB, chunkIds, chunkResults);
+      // Regex-stamp EVERY message with its trip id (container#, or plate→container via binding), so
+      // plain job sheets / status updates link too — not only the messages Groq flags as incidentals.
+      // Only stamp when a message names EXACTLY ONE trip; a multi-container manifest is ambiguous.
+      const tripStamp = new Map<number, { ref: string; type: string }>();
+      for (const m of chunk) {
+        const stamp = stampFor(m.message, links);
+        if (stamp) tripStamp.set(m.id, stamp);
+      }
+
+      const saved = await saveChunkResults(env.DB, chunkIds, chunkResults, tripStamp);
       incidentalsTotal += saved.incidentals;
 
       // Update the trip registry (batched): from classifier trip_references + container/plate regex.
-      const seenAt = new Date().toISOString();
+      const seenAt = nowPh();
       const tripRefs: { ref: string; type: string | null }[] = [];
       for (const r of chunkResults) {
         if (r.trip_reference) tripRefs.push({ ref: r.trip_reference, type: r.reference_type });
       }
       for (const m of chunk) {
         for (const c of m.message.matchAll(CONTAINER_RE)) {
-          tripRefs.push({ ref: c[0], type: "container_number" });
+          tripRefs.push({ ref: normContainer(c[0]), type: "container_number" });
         }
         // Plates are what field reports actually name — seed them so later reports link (#trip-linking).
         for (const c of m.message.matchAll(PLATE_RE)) {
