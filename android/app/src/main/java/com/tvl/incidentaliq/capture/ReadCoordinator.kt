@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import com.tvl.incidentaliq.core.AppLog
 import com.tvl.incidentaliq.core.WakeLockHelper
+import com.tvl.incidentaliq.data.CapturedMessage
 import com.tvl.incidentaliq.data.MessageStore
 
 /**
@@ -31,9 +32,26 @@ object ReadCoordinator {
     data class Task(
         val source: String,         // VIBER | MESSENGER
         val pkg: String,            // com.viber.voip | com.facebook.orca
-        val chatHint: String,       // sender/group from the notification
+        val chatHint: String,       // group name from the notification (also used for storage)
         val intent: PendingIntent?, // notification contentIntent → opens the chat directly
+        val sender: String = "",        // sender from the notification, for the fallback save
+        val fallbackText: String = "",  // truncated notif content, saved if the read fails (text only)
+        val isImage: Boolean = false,   // image notifs have no useful text → no fallback save
     )
+
+    /**
+     * When the accessibility read can't run (app won't open / chat never becomes readable), save the
+     * truncated notification text so the message isn't lost entirely — partial content beats none.
+     * Skipped for image notifications (their "text" is just "Photo"). Dedup in MessageStore means if
+     * the full read later succeeds via another path, this doesn't create a lasting duplicate.
+     */
+    private fun saveFallback(ctx: Context, task: Task) {
+        if (task.isImage || task.fallbackText.isBlank()) return
+        val saved = MessageStore.save(
+            ctx, CapturedMessage(task.source, task.chatHint, task.sender, task.fallbackText, false, viaAccessibility = false)
+        )
+        if (saved) AppLog.write(TAG, "saved truncated notification text as fallback (read failed)")
+    }
 
     private val queue = ArrayDeque<Task>()
     private var handler: Handler? = null
@@ -68,6 +86,7 @@ object ReadCoordinator {
         val svc = UITreeAccessibilityService.instance
         if (svc == null) {
             AppLog.write(TAG, "ABORT — AccessibilityService not running")
+            saveFallback(ctx, task)
             return
         }
 
@@ -76,6 +95,7 @@ object ReadCoordinator {
 
         if (!openChat(ctx, task)) {
             AppLog.write(TAG, "ABORT — could not open chat")
+            saveFallback(ctx, task)
             WakeLockHelper.release()
             return
         }
@@ -92,6 +112,7 @@ object ReadCoordinator {
         }
         if (!ready) {
             AppLog.write(TAG, "TIMEOUT — chat not readable after ${tries}×${POLL_MS}ms (fg=${svc.foregroundPackage()})")
+            saveFallback(ctx, task)
             WakeLockHelper.release()
             return
         }

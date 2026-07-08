@@ -52,6 +52,12 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                     AppLog.write(TAG, "upload will retry (sent $totalSent so far)")
                     return@withContext Result.retry()
                 }
+                UploadResult.QUARANTINE -> {
+                    // Backend permanently rejected this batch (400). Retrying can never succeed, so move
+                    // it to the dead-letter file and continue — otherwise it jams the whole queue behind it.
+                    MessageStore.quarantineFirst(ctx, lines.size)
+                    // loop continues to the next pass with the poison batch removed
+                }
                 UploadResult.FATAL -> {
                     // 4xx other than auth/size we can't fix by retrying — drop the pass, log loudly.
                     AppLog.write(TAG, "upload FATAL (${r}) — giving up this run (sent $totalSent)")
@@ -63,7 +69,7 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
         Result.success()
     }
 
-    private enum class UploadResult { OK, RETRY, FATAL }
+    private enum class UploadResult { OK, RETRY, QUARANTINE, FATAL }
 
     private fun postBatch(base: String, token: String, lines: List<String>): UploadResult {
         val body = """{"messages":[${lines.joinToString(",")}]}"""
@@ -89,8 +95,7 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                     AppLog.write(TAG, "upload OK ($code): ${resp.take(160)}")
                     UploadResult.OK
                 }
-                // 401 (bad/missing token) and 413 (too big) won't fix themselves on blind retry,
-                // but 401 often means "token not set yet" → retry so it recovers once configured.
+                // 401 (bad/missing token) often means "token not set yet" → retry so it recovers.
                 code == 401 -> {
                     AppLog.write(TAG, "upload 401 UNAUTHORIZED — check API token; will retry")
                     UploadResult.RETRY
@@ -98,6 +103,12 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                 code == 413 -> {
                     AppLog.write(TAG, "upload 413 too large — reduce MAX_PER_POST")
                     UploadResult.FATAL
+                }
+                // 400 = backend can't parse/accept this batch. It will NEVER succeed on retry, so
+                // quarantine it instead of blindly retrying forever (which jams the whole queue).
+                code == 400 -> {
+                    AppLog.write(TAG, "upload 400 BAD REQUEST: ${resp.take(160)} — quarantining batch")
+                    UploadResult.QUARANTINE
                 }
                 code in 500..599 -> {
                     AppLog.write(TAG, "upload $code server error: ${resp.take(160)} — will retry")

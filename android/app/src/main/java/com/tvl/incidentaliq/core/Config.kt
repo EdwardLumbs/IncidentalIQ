@@ -76,13 +76,15 @@ object Config {
     /**
      * Should we capture this notification? [source] is "VIBER"|"MESSENGER"; [candidates] are the
      * strings that might hold the group name (conversation title, subtext, notif title). An EMPTY
-     * tracked list means "capture everything" so nothing is dropped before you configure it. Match
-     * is case-insensitive: true if any candidate string CONTAINS a tracked name (so a distinctive
-     * substring of the group name is enough, and extra decoration around it doesn't break it).
+     * tracked list means "capture NOTHING" for that app — fail closed. This is deliberate: the phone
+     * sits in many of the owner's PERSONAL chats, so a wiped/unconfigured list must never fall back to
+     * hoovering up (and uploading) every private conversation. Match is case-insensitive: true if any
+     * candidate string CONTAINS a tracked name (a distinctive substring is enough, and extra
+     * decoration around it doesn't break it).
      */
     fun isGroupTracked(ctx: Context, source: String, candidates: List<String>): Boolean {
         val tracked = trackedGroups(ctx, source)
-        if (tracked.isEmpty()) return true
+        if (tracked.isEmpty()) return false   // fail closed — never capture untracked personal chats
         val cands = candidates.filter { it.isNotBlank() }.map { it.lowercase() }
         return tracked.any { t ->
             val tl = t.lowercase()

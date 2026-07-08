@@ -113,9 +113,12 @@ a hint, not proof — sender names (chat account names) may not exactly match th
 helper names, so only link when it's a reasonable match.`;
 }
 
-// Batch system prompt — results + an updated rolling situation_summary.
+// Batch system prompt — results + an updated rolling situation_summary. Memoized: it's byte-for-byte
+// identical on every call (the ~1.2KB rulebook + fixed output spec), so build it once, not per batch.
+let cachedBatchSystemPrompt: string | null = null;
 function buildBatchSystemPrompt(): string {
-  return `${buildRulebook()}
+  if (cachedBatchSystemPrompt !== null) return cachedBatchSystemPrompt;
+  cachedBatchSystemPrompt = `${buildRulebook()}
 
 You are given: (1) a SITUATION SO FAR summary of everything relevant that happened earlier in this
 chat, (2) a KNOWN TRIPS list, and (3) a numbered batch of NEW messages from ONE chat (newest last).
@@ -148,6 +151,7 @@ situation_summary: rewrite the SITUATION SO FAR into an UPDATED compact summary 
 captures the STILL-RELEVANT state after these new messages: which trips/containers are in progress,
 who is stuck/waiting, what incidentals are pending or at risk, and any trip references seen. DROP
 trips that are clearly finished. This is the ONLY memory carried to the next run — make it count.`;
+  return cachedBatchSystemPrompt;
 }
 
 // Batch user prompt: summary + trip registry + the new messages to classify.
@@ -176,6 +180,10 @@ function buildBatchUserPrompt(args: {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Abort a Groq call that hangs, so one stuck request can't stall the whole cron invocation until
+// Cloudflare kills it. A timed-out attempt is retried like any transient failure.
+const GROQ_TIMEOUT_MS = 30_000;
+
 interface GroqMeta { latencyMs: number; usage: any; rateLimit: Record<string, string | null>; }
 
 // Shared Groq call: JSON mode + temp 0, retry on 429 using the wait Groq tells us,
@@ -188,19 +196,30 @@ async function callGroq(args: {
   let res: Response;
 
   for (let attempt = 0; ; attempt++) {
-    res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        temperature: 0,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
+    try {
+      res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model,
+          temperature: 0,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        }),
+      });
+    } catch (e: any) {
+      // Network error or our own timeout abort → retry (transient), else give up.
+      if (attempt < maxRetries) { await sleep(2000 * (attempt + 1)); continue; }
+      throw new Error(`Groq request failed after ${maxRetries} retries: ${String(e?.message ?? e)}`);
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (res.status === 429 && attempt < maxRetries) {
       const body = await res.text();

@@ -166,4 +166,29 @@ object MessageStore {
         if (remaining.isEmpty()) f.writeText("") else f.writeText(remaining.joinToString("\n") + "\n")
         AppLog.write(TAG, "pruned $count uploaded message(s); ${remaining.size} still buffered")
     }
+
+    /**
+     * Move the first [count] buffered lines to a dead-letter file and remove them from the buffer.
+     * Used when the backend permanently REJECTS a batch (HTTP 400): retrying can never succeed, and
+     * leaving it at the head of the queue would block every message behind it forever (the poison-
+     * message deadlock). Quarantining unblocks the queue while preserving the rejected lines for
+     * inspection instead of silently dropping them.
+     */
+    @Synchronized
+    fun quarantineFirst(ctx: Context, count: Int) {
+        if (count <= 0) return
+        val f = file(ctx)
+        if (!f.exists()) return
+        val all = f.readLines().filter { it.isNotBlank() }
+        val bad = all.take(count)
+        if (bad.isEmpty()) return
+        try {
+            File(ctx.filesDir, "rejected_messages.jsonl").appendText(bad.joinToString("\n") + "\n")
+        } catch (e: Exception) {
+            AppLog.write(TAG, "dead-letter write failed: ${e.message}")
+        }
+        val remaining = all.drop(count)
+        if (remaining.isEmpty()) f.writeText("") else f.writeText(remaining.joinToString("\n") + "\n")
+        AppLog.write(TAG, "QUARANTINED $count rejected message(s) → rejected_messages.jsonl; ${remaining.size} still buffered")
+    }
 }

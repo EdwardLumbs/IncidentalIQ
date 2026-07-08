@@ -32,6 +32,11 @@ class MonitorForegroundService : Service() {
         handler.post(heartbeat)
     }
 
+    // START_STICKY: if the OS kills the service under memory pressure, recreate it (with a null
+    // intent) as soon as resources free up — so the 24/7 monitor self-heals without waiting for a
+    // reboot. onCreate() already (re)asserts startForeground on each recreation.
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+
     override fun onDestroy() {
         handler.removeCallbacks(heartbeat)
         AppLog.write("SERVICE", "=== MONITOR DESTROYED — service was killed ===")

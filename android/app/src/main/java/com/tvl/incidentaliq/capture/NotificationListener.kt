@@ -80,7 +80,10 @@ class NotificationListener : NotificationListenerService() {
                 AppLog.write(TAG, "  ACTION: enqueue accessibility READ (${if (truncated) "truncated" else "image"})")
                 ReadCoordinator.enqueue(
                     this,
-                    ReadCoordinator.Task(app, sbn.packageName, groupName, n.contentIntent)
+                    ReadCoordinator.Task(
+                        app, sbn.packageName, groupName, n.contentIntent,
+                        sender = sender, fallbackText = content, isImage = imageLike,
+                    )
                 )
             }
 
