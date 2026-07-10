@@ -18,7 +18,18 @@ export interface IncomingMessage {
   via_accessibility?: boolean; // phone field — inverse of raw_notif
 }
 
-const DEDUP_WINDOW_MS = 10 * 60 * 1000; // 10 min, matches on-device dedup
+// Dedup windows (content-hash + time). Two tiers, because the accessibility catch-up read re-reads
+// messages ALREADY captured and stamps them with its READ-time — often >10 min after the original —
+// so a single 10-min window let those re-reads through as duplicates. A SUBSTANTIVE message (a job
+// sheet / field report) that reappears byte-for-byte within hours is virtually always such a re-read,
+// so it gets a wide window; SHORT chatter ("ok po", "👍") legitimately repeats, so it keeps a tighter
+// window (dropping a duplicate of it is harmless anyway — it carries no incidental).
+const SUBSTANTIVE_LEN = 30;                     // messages this long or longer use the wide window
+const DEDUP_WINDOW_LONG_MS = 6 * 60 * 60 * 1000; // 6 h — for substantive messages
+const DEDUP_WINDOW_SHORT_MS = 60 * 60 * 1000;    // 1 h — for short chatter
+const DEDUP_LOOKUP_MS = DEDUP_WINDOW_LONG_MS;    // widest window → bounds the candidate lookback
+const dedupWindowFor = (message: string) =>
+  message.trim().length >= SUBSTANTIVE_LEN ? DEDUP_WINDOW_LONG_MS : DEDUP_WINDOW_SHORT_MS;
 // D1 caps bound parameters at 100 PER STATEMENT (stricter than SQLite's default). So each
 // statement must stay ≤100 binds — but we bundle many statements into one DB.batch() call, which
 // is a single subrequest. Net: a whole upload costs ~2 subrequests regardless of message count.
@@ -91,7 +102,7 @@ export async function insertMessages(
 
   // 2) ONE bulk lookup of existing (hash, timestamp) for all candidate hashes, bounded to the
   //    earliest relevant window so we don't drag back the whole table for a common hash.
-  const minTsMs = Math.min(...prepared.map((p) => p.tsMs)) - DEDUP_WINDOW_MS;
+  const minTsMs = Math.min(...prepared.map((p) => p.tsMs)) - DEDUP_LOOKUP_MS;
   const loIso = phFromEpoch(minTsMs); // PH-format bound so string compare vs stored PH timestamps is chronological
   const uniqueHashes = [...new Set(prepared.map((p) => p.hash))];
   const seenTimes = new Map<string, number[]>(); // hash → [tsMs, ...] already present
@@ -117,11 +128,13 @@ export async function insertMessages(
     }
   }
 
-  // 3) Filter: skip if a same-hash row (already in D1, or earlier in THIS batch) is within ±window.
+  // 3) Filter: skip if a same-hash row (already in D1, or earlier in THIS batch) is within the
+  //    message's window — wide for substantive re-reads, tight for short chatter.
   const fresh: PreparedMsg[] = [];
   for (const p of prepared) {
     const times = seenTimes.get(p.hash) ?? [];
-    if (times.some((t) => Math.abs(t - p.tsMs) < DEDUP_WINDOW_MS)) { skipped++; continue; }
+    const win = dedupWindowFor(p.message);
+    if (times.some((t) => Math.abs(t - p.tsMs) < win)) { skipped++; continue; }
     fresh.push(p);
     times.push(p.tsMs);              // makes later identical msgs in this same batch dedup too
     seenTimes.set(p.hash, times);

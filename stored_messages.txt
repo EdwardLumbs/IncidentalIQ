@@ -1,8 +1,8 @@
 IncidentalIQ — Stored Messages (history export)
-Generated: 2026-07-08T13:16:31.447Z
-Total messages: 287
-By chat: TVL DOCUMENTATION / REPORTING6(p99 = 232  |  FUEL REFILLING TOTAL = 9  |  EXCLUSIVE DRIVER = 46
-Messages with incidentals: 6
+Generated: 2026-07-10T14:04:47.103Z
+Total messages: 608
+By chat: TVL DOCUMENTATION / REPORTING6(p99 = 459  |  FUEL REFILLING TOTAL = 15  |  EXCLUSIVE DRIVER = 134
+Messages with incidentals: 23
 
 Columns:  ID | TIME (PH) | CHAT | SENDER | INCIDENTAL(S) + STATUS | TRIP | MESSAGE
 ================================================================================================================================================================
@@ -293,16 +293,366 @@ Columns:  ID | TIME (PH) | CHAT | SENDER | INCIDENTAL(S) + STATUS | TRIP | MESSA
 563  | 07-08 19:27  | TVL-DOC   | Christian Rex          | —                                        | GCXU5905782   | Export TVLtucking Services Mat4846 1X40 Date.8/7/26 Chass#05 Driver A.bruno Helper C.pielago Ctnr#GCXU 5905782 Seal#KSC 622106 Address:Lot 1&5 Warehouse 2&3 Filinvest techno park Calamba Laguna ✨✨✨✨✨✨ Arrival.1658 S loading.1810 F loading.1912...
 564  | 07-08 19:27  | TVL-DOC   | Christian Rex          | —                                        | GCXU5905782   | Export TVLtucking Services Mat4846 1X40 Date.8/7/26 Chass#05 Driver A.bruno Helper C.pielago Ctnr#GCXU 5905782 Seal#KSC 622106 Address:Lot 1&5 Warehouse 2&3 Filinvest techno park Calamba Laguna ✨✨✨✨✨✨ Arrival.1658 S loading.1810 F loading.1912 Jobcom. Departure. Received.
 565  | 07-08 19:27  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | [image]
+566  | 07-08 22:28  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Kailangan yung talukbong ng elisi boss wala kc yan
+567  | 07-08 22:29  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | C kuya kelby expert nun taga gawa
+568  | 07-08 23:48  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | [image]
+569  | 07-08 23:48  | TVL-DOC   | Christian Rex          | —                                        | GCXU5905782   | Export TVLtucking Services Mat4846 1X40 Date.8/7/26 Chass#05 Driver A.bruno Helper C.pielago Ctnr#GCXU 5905782 Seal#KSC 622106 Address:Lot 1&5 Warehouse 2&3 Filinvest techno park Calamba Laguna ✨✨✨✨✨✨ Arrival.1658 S loading.1810 F loading.1912...
+570  | 07-08 23:48  | TVL-DOC   | Christian Rex          | —                                        | GCXU5905782   | Export TVLtucking Services Mat4846 1X40 Date.8/7/26 Chass#05 Driver A.bruno Helper C.pielago Ctnr#GCXU 5905782 Seal#KSC 622106 Address:Lot 1&5 Warehouse 2&3 Filinvest techno park Calamba Laguna ✨✨✨✨✨✨ Arrival.1658 S loading.1810 F loading.1912 Jobcom.2035 Departure.2052 Received.
+571  | 07-08 23:48  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Sent 3 photos.
+572  | 07-09 04:57  | TVL-DOC   | Joshua Quidato         | —                                        | NBYU8311150   | NGT9149 gate in mip
+573  | 07-09 06:47  | TVL-DOC   | Christian Rex Pielago  | —                                        | GCXU5905782   | Mat4846 gate in ATI.
+574  | 07-09 06:53  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | 👍
+575  | 07-09 07:07  | TVL-DOC   | Cel Ed                 | —                                        | —             | Napakaha haba po ng pila sa seacon
+576  | 07-09 07:09  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent a video.
+577  | 07-09 07:20  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent a video.
+578  | 07-09 07:22  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent a video.
+579  | 07-09 07:22  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Nagcarwash n ang hellper ko boss madam
+580  | 07-09 07:23  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Nagmamadali sa sahud hahaha
+581  | 07-09 07:44  | EXCL-DRV  | Khelby Jun Pielago     | —                                        | —             | Uuwi na kamo yan kya nag hugas na agad.
+582  | 07-09 08:02  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent 2 photos.
+583  | 07-09 08:19  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Sent a photo.
+584  | 07-09 08:29  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Otw napo CBR mip
+585  | 07-09 08:46  | FUEL      | IMEE BUENVIAJE         | —                                        | —             | sent a photo
+586  | 07-09 08:46  | FUEL      | IMEE BUENVIAJE         | —                                        | —             | Good Morning As of July 09 6am Available balance ₱32,145.26 Thank you.
+587  | 07-09 08:54  | EXCL-DRV  | Antonio Bruno          | —                                        | —             | Sent a photo.
+588  | 07-09 08:55  | EXCL-DRV  | Khelby Jun             | —                                        | —             | Uuwi na kamo yan kya nag hugas na agad.
+589  | 07-09 08:55  | EXCL-DRV  | Antonio                | —                                        | —             | Madam paki email sa ati na baka may ibang location yong export ko Kasi Ang daming truck Dito sa holding na naka park Dito sa holding Ang location ko. Salamat
+590  | 07-09 08:55  | EXCL-DRV  | Antonio Bruno          | —                                        | —             | [image]
+591  | 07-09 09:20  | EXCL-DRV  | Victoria Ronquillo Lu… | —                                        | —             | Okay cge
+592  | 07-09 09:22  | EXCL-DRV  | Antonio                | —                                        | —             | Madam paki email sa ati na baka may ibang location yong export ko Kasi Ang daming truck Dito sa holding na naka park Dito sa holding Ang location ko. Salamat
+593  | 07-09 09:22  | EXCL-DRV  | Antonio                | —                                        | —             | Sabi Dito sa transport may pupunta na daw na Kalmar pero Hanggang ngayun Wala pa. Dito daw talaga Ang location ko madam.
+594  | 07-09 09:23  | EXCL-DRV  | Victoria               | —                                        | —             | Ah okay cge hintayin nyo lang kapag 10 na wala pa din balik ka nalang ulit sa transport mga siraulo kc yang taga ATI hindi yan basta nagrereply sa emai
+595  | 07-09 09:31  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Mtgal ppnta yan bruns anty yan dami kyu pra d lugi s ppnta jn hahaha
+596  | 07-09 09:34  | EXCL-DRV  | Victoria               | —                                        | —             | Ah okay cge hintayin nyo lang kapag 10 na wala pa din balik ka nalang ulit sa transport mga siraulo kc yang taga ATI hindi yan basta nagrereply sa emai
+597  | 07-09 09:34  | EXCL-DRV  | Antonio                | —                                        | —             | Oo nga eh pinapadami pa nga cguro kami Dito Ang daming walang location Dito sa holding. Buti nalang naka double Ako Dito Hindi ma no show.
+598  | 07-09 09:34  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Hnd tanggap ng butal yan kailangan buo tlga hhhhhh
+599  | 07-09 09:36  | EXCL-DRV  | Antonio Bruno          | —                                        | —             | Oo nga eh. Nakahanda na Ang kulay green tsaka violet. Hahahahaha
+600  | 07-09 09:38  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Naka pasok napo CBR mip
+601  | 07-09 09:42  | TVL-DOC   | Cel Ed                 | —                                        | —             | [image]
+602  | 07-09 09:42  | TVL-DOC   | Manuelito              | —                                        | —             | Otw napo CBR mip
+603  | 07-09 09:42  | TVL-DOC   | Cel                    | —                                        | —             | Pag dating namin kaninang madaling araw ganyan na po kahaba ang pila di pa nga kami naka singit sa pila
+604  | 07-09 09:54  | TVL-DOC   | Lemmar Lasto           | —                                        | NGR7873       | .ngr7873 otw emme full out empty
+605  | 07-09 10:13  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent a video.
+606  | 07-09 10:18  | TVL-DOC   | Lemmar Lasto           | —                                        | —             | .naka pasok nah kami sah emme
+607  | 07-09 10:19  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Dito Napo Kame Nakapila Sa May ilog Mam
+608  | 07-09 10:24  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Wala daw calmar SA location NI Bruno mars
+609  | 07-09 10:30  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | maluwag Naman Dito Sa Loob Walang Mga Truck dito nako Verify
+610  | 07-09 10:31  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Sent a photo.
+611  | 07-09 10:32  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Bilisan mona nagiintay na Kami dito
+612  | 07-09 11:44  | EXCL-DRV  | Loumeram               | —                                        | —             | Hnd tanggap ng butal yan kailangan buo tlga hhhhhh
+613  | 07-09 11:44  | EXCL-DRV  | Antonio                | —                                        | —             | Oo nga eh. Nakahanda na Ang kulay green tsaka violet. Hahahahaha
+614  | 07-09 11:44  | EXCL-DRV  | Antonio                | —                                        | —             | Hay naku! Anu na nangyayari Dito sa south Hanggang ngayun Wala pa din malapit na Kalmar Dito sa location ko. Pagnag tanung Naman hantay hantay lang daw.
+615  | 07-09 11:50  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Sent a photo.
+616  | 07-09 11:50  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | malapit Napo Kame makapasok Seacon Mam
+617  | 07-09 11:59  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Breaktime Napo Dito Seacon
+618  | 07-09 12:44  | TVL-DOC   | Jhoseph                | —                                        | —             | malapit Napo Kame makapasok Seacon Mam
+619  | 07-09 12:44  | TVL-DOC   | Jhoseph                | —                                        | —             | Breaktime Napo Dito Seacon
+620  | 07-09 12:44  | TVL-DOC   | Victoria               | —                                        | —             | May bago akong pinapagawang uniform 50 pcs yon worth 9K plus ang gastos dyan. Guys gusto ko lang ipa intindi sa inyong lahat na ang uniform na pinapagawa ko at ini issue sa inyo ay hindi biro ang halaga kaya sana naman pahalagahan nyo naman wag...
+621  | 07-09 12:44  | TVL-DOC   | Victoria               | —                                        | —             | May bago akong pinapagawang uniform 50 pcs yon worth 9K plus ang gastos dyan. Guys gusto ko lang ipa intindi sa inyong lahat na ang uniform na pinapagawa ko at ini issue sa inyo ay hindi biro ang halaga kaya sana naman pahalagahan nyo naman wag nyo namang gawing basahan kapag hindi nyo na kayang malabhan okay? Nakakahinayang kc sa part namin kapag nakikita ko na walang pagpapahalaga sa mga gamit na binibigay sana ng kumpanya ng libre.
+622  | 07-09 12:46  | EXCL-DRV  | Victoria Ronquillo Lu… | —                                        | —             | Bruno ano ng balita?
+623  | 07-09 12:46  | EXCL-DRV  | Victoria Ronquillo Lu… | —                                        | —             | Wala pa din ba?
+624  | 07-09 12:47  | EXCL-DRV  | Antonio Bruno          | —                                        | —             | Andito pa din Ako sa truck holding madam. Dito Kasi Ang location ko.
+625  | 07-09 12:47  | EXCL-DRV  | Victoria               | detention[possible]                      | NEG5077       | Aabutan na tayo ng truck ban dahil sa mga kapalpakan dyan sa ATI na yan grabe naman yan tapos mag aareglo pa tayo sa kanila nasaan naman ang hustisya
+626  | 07-09 12:58  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Sana po may kasya sakin😥
+627  | 07-09 12:59  | TVL-DOC   | Cel Ed                 | —                                        | —             | Andyan na naman sya
+628  | 07-09 13:06  | EXCL-DRV  | Antonio Bruno          | —                                        | —             | Lagi sinasabi hantay lang daw eh. Dito daw Kasi Ang location ko madam.
+629  | 07-09 13:06  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Sent a photo.
+630  | 07-09 13:07  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Ma'am pa pallow up po gang Ngayon wala pading calmar si bruno
+631  | 07-09 13:08  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | 👍
+632  | 07-09 13:08  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | kausap ko sya
+633  | 07-09 13:27  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent 3 photos.
+634  | 07-09 13:30  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | Ano naman yan
+635  | 07-09 13:31  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Sent a photo.
+636  | 07-09 13:32  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Out napo CBR mip
+637  | 07-09 13:37  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Sent a photo.
+638  | 07-09 13:52  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Sent a photo.
+639  | 07-09 14:17  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | naipet pa NBQ sa tower c dimaka punta tower a Bagal usad
+640  | 07-09 14:21  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | hayssss
+641  | 07-09 14:56  | TVL-DOC   | Jhoseph                | —                                        | —             | naipet pa NBQ sa tower c dimaka punta tower a Bagal usad
+642  | 07-09 14:56  | TVL-DOC   | Jhoseph                | —                                        | —             | hayssss
+643  | 07-09 14:56  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in: Peza out: Arrival: S...
+644  | 07-09 14:56  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in: Peza out: Arrival: S unloading: F unloading: Jobcom: Departure: Receive:
+645  | 07-09 14:58  | TVL-DOC   | Lemmar Lasto           | —                                        | —             | 👍
+646  | 07-09 15:30  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in:1520H Peza out: Arrival:...
+647  | 07-09 15:30  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in:1520H Peza out: Arrival: S unloading: F unloading: Jobcom: Departure: Receive:
+648  | 07-09 15:30  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Sent a photo.
+649  | 07-09 15:34  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Tapos Napo Kame Mag Saule Mam
+650  | 07-09 15:36  | TVL-DOC   | Christian Rex Pielago  | —                                        | TLLU1312360   | Mat4846 out ATI
+651  | 07-09 15:36  | TVL-DOC   | Christian Rex Pielago  | —                                        | TLLU1312360   | Otw mat4846 Hyundai sucat
+652  | 07-09 15:41  | TVL-DOC   | Joshua Quidato         | —                                        | NBYU8311150   | NGT9149 out mip
+653  | 07-09 15:46  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Otw mat4846 Hyundai sucat
+654  | 07-09 15:46  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Import TVLtucking Services Mat4846 Date.8/7/26 Chassi#03 Driver A.bruno Helper C.pielago Ctnr#TLLU 1312360 Seal# Address.hyundai Engineering & construction Sucat. ✨✨✨✨✨✨ ATI in:0647 ATI out:1546 Arrival. S unloading. F unloading. Jobcom. Received.
+655  | 07-09 15:46  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Import TVLtucking Services Mat4846 Date.8/7/26 Chassi#03 Driver A.bruno Helper C.pielago Ctnr#TLLU 1312360 Seal# Address.hyundai Engineering & construction Sucat. ✨✨✨✨✨✨ ATI in:0647 ATI out:1546 Arrival. S unloading. F unloading. Jobcom. Received.
+656  | 07-09 15:57  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Import TVLtucking Services Mat4846 Date.8/7/26 Chassi#03 Driver A.bruno Helper C.pielago Ctnr#TLLU 1312360 Seal# Address.hyundai Engineering & construction Sucat. ✨✨✨✨✨✨ ATI in:0647 ATI out:1546 Arrival. S unloading. F unloading. Jobcom. Received.
+657  | 07-09 15:57  | TVL-DOC   | Christian              | —                                        | ONEU0401099   | TVL TRUCKING Export 07-09-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; DO FIRST MS PHILS. CORP. Address; CEZ1 ROSARIO CAVITE Cont# ONEU 0401099 Seal# PHAG70057 S.Line; ONE Size; 1x40 Peza In; 1258H 07-09 Client In; 0137H 07-09 S.Loading; 0150H 07-09 F.Loading; J.Comp; Departure; Recieve;
+658  | 07-09 16:02  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in:1520H Peza out:1550H Arrival:1556H 07-09-26 S unloading: F unloading: Jobcom: Departure: Receive:
+659  | 07-09 16:02  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Sent a photo.
+660  | 07-09 16:05  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent 2 photos.
+661  | 07-09 16:07  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent a photo.
+662  | 07-09 16:26  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Loumeram Onad reacted 👍 to: Tumataas
+663  | 07-09 17:28  | TVL-DOC   | Cel Ed                 | —                                        | —             | Na kulong kmi sa tower c di kami makalabas
+664  | 07-09 17:29  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Tumakas kayo
+665  | 07-09 17:39  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in:1520H Peza out:1550H Arrival:1556H 07-09-26 S unloading:1740H 07-09-26 F unloading: Jobcom: Departure: Receive:
+666  | 07-09 17:39  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Sent a photo.
+667  | 07-09 17:44  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Dyan Mo Na Pababa
+668  | 07-09 17:50  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | nabigay Ko Na Docs Kila Kuya Joan Mam
+669  | 07-09 17:50  | TVL-DOC   | Christian Manabat      | —                                        | —             | Christian set his own nickname to It's Me KING.
+670  | 07-09 17:59  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent 2 photos.
+671  | 07-09 18:13  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | Ano yan?
+672  | 07-09 18:15  | TVL-DOC   | Christian Manabat      | —                                        | —             | Sent a video.
+673  | 07-09 18:19  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in:1520H Peza out:1550H...
+674  | 07-09 18:19  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in:1520H Peza out:1550H Arrival:1556H 07-09-26 S unloading:1740H 07-09-26 F unloading:1818H 07-09-26 Jobcom: Departure: Receive:
+675  | 07-09 18:30  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in:1520H Peza out:1550H Arrival:1556H 07-09-26 S unloading:1740H 07-09-26 F unloading:1818H 07-09-26 Jobcom: Departure: Receive:
+676  | 07-09 18:30  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in:1520H Peza out:1550H...
+677  | 07-09 18:30  | TVL-DOC   | Manuelito              | —                                        | YMLU5186838   | Import TVLtucking Services Date:07-09-26 Zise#1x40 Chassis:#12 Driver R. Ando Helper M. Meridor Ctnr#YMLU5186838 Seal#YMAV557870 client:Hayashi SEIKO Address:MAGUYAM SILANG CAVITE Mip in:0940H Mip out:1257H Peza in:1520H Peza out:1550H Arrival:1556H 07-09-26 S unloading:1740H 07-09-26 F unloading:1818H 07-09-26 Jobcom:1829H 07-09-26 Departure:1830H 07-09-26 Receive:Christian D.
+678  | 07-09 18:33  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Sent 18 photos.
+679  | 07-09 18:45  | TVL-DOC   | Christian              | —                                        | ONEU0401099   | TVL TRUCKING Export 07-09-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; DO FIRST MS PHILS. CORP. Address; CEZ1 ROSARIO CAVITE Cont# ONEU 0401099 Seal# PHAG70057 S.Line; ONE Size; 1x40 Peza In; 1258H 07-09 Client In;...
+680  | 07-09 18:45  | TVL-DOC   | Christian              | —                                        | ONEU0401099   | TVL TRUCKING Export 07-09-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; DO FIRST MS PHILS. CORP. Address; CEZ1 ROSARIO CAVITE Cont# ONEU 0401099 Seal# PHAG70057 S.Line; ONE Size; 1x40 Peza In; 1258H 07-09 Client In; 0137H 07-09 S.Loading; 0150H 07-09 F.Loading;0540H 07-09 J.Comp;0557H 07-09 Departure;0644H 07-09 Recieve;
+681  | 07-09 18:45  | TVL-DOC   | It's Me KING           | —                                        | —             | Otw napo garahe NDZ 7am papo next booking
+682  | 07-09 19:25  | TVL-DOC   | Christian              | —                                        | —             | Otw napo garahe NDZ 7am papo next booking
+683  | 07-09 19:25  | TVL-DOC   | Joshua                 | —                                        | YMLU7435082   | TVL TRUCKING SERVICES IMPORT LOADED MIP ROYAL CARGO DRIVER: DANTE IRASGA HELPER: IKE QUIDATO PLATE NO.: NGT9149 CHASSI NO.; TVL #07 DATE: 07-09-26 CONT. NO.: YMLU7435082 SEAL NO.: # SIZE: 1×20/ YML CLIENT: RCI NORTH HUB ADDRESS: PLARIDEL BYPASS...
+684  | 07-09 19:25  | TVL-DOC   | Joshua Quidato         | —                                        | —             | Sent 3 photos.
+685  | 07-09 19:25  | TVL-DOC   | Joshua Quidato         | —                                        | —             | Sent a photo.
+686  | 07-09 19:27  | TVL-DOC   | Joshua Quidato         | —                                        | —             | Sent a video.
+687  | 07-09 19:49  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent a photo.
+688  | 07-09 20:36  | TVL-DOC   | Cel                    | —                                        | —             | Sent a photo.
+689  | 07-09 20:36  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Import TVLtucking Services Mat4846 Date.8/7/26 Chassi#03 Driver A.bruno Helper C.pielago Ctnr#TLLU 1312360 Seal# Address.hyundai Engineering & construction Sucat. ✨✨✨✨✨✨ ATI in:0647 ATI out:1546 Arrival.2036 S unloading. F unloading. Jobcom....
+690  | 07-09 20:36  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Import TVLtucking Services Mat4846 Date.8/7/26 Chassi#03 Driver A.bruno Helper C.pielago Ctnr#TLLU 1312360 Seal# Address.hyundai Engineering & construction Sucat. ✨✨✨✨✨✨ ATI in:0647 ATI out:1546 Arrival.2036 S unloading. F unloading. Jobcom. Received.
+691  | 07-09 20:38  | TVL-DOC   | Joshua Quidato         | —                                        | YMLU7435082   | NGT9149 start unload
+692  | 07-09 20:41  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | 👍
+693  | 07-09 20:45  | TVL-DOC   | Cel Ed                 | —                                        | —             | Tinago nyo ng ma ayos ang oneu4039033 sa oceanic hahaha di pa makita
+694  | 07-09 20:47  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Parang nasa ibabaw lng un cel one un
+695  | 07-09 21:14  | TVL-DOC   | Joshua Quidato         | —                                        | YMLU7435082   | NGT9149 finish unload
+696  | 07-09 21:16  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | Pictures Ike
+697  | 07-09 21:17  | TVL-DOC   | Joshua Quidato         | —                                        | —             | kay maam ronica ko na po pinasa maam, magkachat po kami.
+698  | 07-09 21:19  | TVL-DOC   | Cel Ed                 | —                                        | —             | Nasa gitna pinaka baba tong 24 na container ang kukunin bago ma kuwa sayo ba to?
+699  | 07-09 21:19  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | Naku pabilisan mo naman Edsel 10 ang booking nyo sa Seacon baka ma late pa kayo
+700  | 07-09 21:20  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | Dito sa GC nyo esend for our reference
+701  | 07-09 21:54  | TVL-DOC   | Victoria               | —                                        | —             | Naku pabilisan mo naman Edsel 10 ang booking nyo sa Seacon baka ma late pa kayo
+702  | 07-09 21:54  | TVL-DOC   | Victoria               | —                                        | —             | Dito sa GC nyo esend for our reference
+703  | 07-09 21:54  | TVL-DOC   | Joshua                 | —                                        | YMLU7435082   | TVL TRUCKING SERVICES IMPORT LOADED MIP ROYAL CARGO DRIVER: DANTE IRASGA HELPER: IKE QUIDATO PLATE NO.: NGT9149 CHASSI NO.; TVL #07 DATE: 07-09-26 CONT. NO.: YMLU7435082 SEAL NO.: # SIZE: 1×20/ YML CLIENT: RCI NORTH HUB ADDRESS: PLARIDEL BYPASS...
+704  | 07-09 21:54  | TVL-DOC   | Joshua                 | —                                        | YMLU7435082   | TVL TRUCKING SERVICES IMPORT LOADED MIP ROYAL CARGO DRIVER: DANTE IRASGA HELPER: IKE QUIDATO PLATE NO.: NGT9149 CHASSI NO.; TVL #07 DATE: 07-09-26 CONT. NO.: YMLU7435082 SEAL NO.: # SIZE: 1×20/ YML CLIENT: RCI NORTH HUB ADDRESS: PLARIDEL BYPASS ROAD BULACAN MIP IN:0457H MIP OUT: 1541H WHSE. ARRIVAL: 1921H S- UNLOAD: 2038H F- UNLOAD: 2114H JOB. COMP.: 2145H DEPARTURE: RECEIVED: ROSALIE BAGATSONG
+705  | 07-09 22:08  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | Standby muna kayo dyan ike waiting pa kami ng reply sa pre advise
+706  | 07-09 22:22  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent a photo.
+707  | 07-09 22:53  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent a photo.
+708  | 07-09 22:54  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | nababaan Napo NBQ Waiting Po Sa Advice Mam
+709  | 07-09 23:16  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent a photo.
+710  | 07-09 23:25  | TVL-DOC   | Cel Ed                 | —                                        | —             | Tapos na po mag pa virify pa balik na po ako ng hArbor
+711  | 07-09 23:27  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | 👍
+712  | 07-10 00:44  | TVL-DOC   | Jo-an Cordero          | —                                        | —             | Nasa holding. Na c cbb. Nang mip
+713  | 07-10 00:56  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | 2AM pa brd @Jo-an Cordero
+714  | 07-10 00:58  | TVL-DOC   | Jo-an Cordero          | —                                        | —             | Mag parking lang yun. Sa holdi g mamaya yun papasok 2am
+715  | 07-10 01:45  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Bay @Joel Aballie bay unsa problima sa truck bay
+716  | 07-10 01:45  | TVL-DOC   | Cel Ed                 | overtime_charges[possible]               | TIIU5522620   | Kong anu po yong pila kanina mas malala pa ngayon hay ... Naka pasok na sa tabing ilog si NEG
+717  | 07-10 01:48  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Otw napo CBR ATI
+718  | 07-10 01:58  | EXCL-DRV  | Jong Rubio             | —                                        | —             | 09759442614 Bay may pina dala si @Khelby Jun Pielago sa akin clutch master pati brake fluid
+719  | 07-10 03:37  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Naka posok napo CBR ATI
+720  | 07-10 03:39  | TVL-DOC   | Russel Diloy           | —                                        | CAP7500       | OTW napo CAP7500 MIP
+721  | 07-10 04:07  | TVL-DOC   | Jhoseph D. Ariate      | overtime_charges[possible]               | —             | HABA napo Ng Pila Ng South
+722  | 07-10 04:18  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Sent a photo.
+723  | 07-10 04:52  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Sent a photo.
+724  | 07-10 04:53  | TVL-DOC   | Jhoseph D. Ariate      | overtime_charges[possible]               | CAAU6076804   | papasok Napo ATI NBQ
+725  | 07-10 05:02  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Maam good morning wala pa kami manifest maam
+726  | 07-10 05:06  | TVL-DOC   | Russel Diloy           | overtime_charges[possible]               | CAP7500       | papasok napo ng holding si CAP7500
+727  | 07-10 05:40  | EXCL-DRV  | Ancel Remo             | —                                        | —             | Sent a photo.
+728  | 07-10 06:13  | TVL-DOC   | Manuelito Meridor      | overtime_charges[possible]               | TLLU1312360   | Mam hndi pa Po nakakalabas c kua ando ATI
+729  | 07-10 07:32  | TVL-DOC   | Jo-an Cordero          | —                                        | —             | Kinokolit na ako namg taga onsimi
+730  | 07-10 07:35  | EXCL-DRV  | Ancel Remo             | —                                        | —             | Sent 3 photos.
+731  | 07-10 07:37  | TVL-DOC   | Russel Diloy           | —                                        | —             | out mip OTW Silang Cavite
+732  | 07-10 07:43  | TVL-DOC   | Russel Diloy           | —                                        | —             | Sent a photo.
+733  | 07-10 07:54  | TVL-DOC   | Russel                 | —                                        | —             | Sent a photo.
+734  | 07-10 07:54  | TVL-DOC   | Russel                 | —                                        | IAAU2909955   | Import TVLtucking Services Date:07-10-26 Zise#1x20 Chassis:#09 Driver ,A,REMO Helper,R, Diloy Ctnr#IAAU2909955 Seal#IAAJ517448 client:Ruize PHillippinez INC Address:Silang Cavite Mip in:0505H Mip out:0737H PEZA,IN, PEZA,OUT, Arrival: S...
+735  | 07-10 07:54  | TVL-DOC   | Jhoseph D. Ariate      | overtime_charges[possible]               | FFAU3649830   | Haba Daw Po Ng Pila Ng Dea Dito Sa ATI
+736  | 07-10 07:54  | TVL-DOC   | Russel                 | —                                        | IAAU2909955   | Import TVLtucking Services Date:07-10-26 Zise#1x20 Chassis:#09 Driver ,A,REMO Helper,R, Diloy Ctnr#IAAU2909955 Seal#IAAJ517448 client:Ruize PHillippinez INC Address:Silang Cavite Mip in:0505H Mip out:0737H PEZA,IN, PEZA,OUT, Arrival: S unloading: F unloading: Jobcom: Departure: Receive:
+737  | 07-10 08:06  | TVL-DOC   | Jhoseph                | overtime_charges[possible]               | FFAU3649830   | Haba Daw Po Ng Pila Ng Dea Dito Sa ATI
+738  | 07-10 08:06  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Import TVLtucking Services Mat4846 Date.8/7/26 Chassi#03 Driver A.bruno Helper C.pielago Ctnr#TLLU 1312360 Seal# Address.hyundai Engineering & construction Sucat. ✨✨✨✨✨✨ ATI in:0647 ATI out:1546 Arrival.2036 S unloading.0805 F unloading. Jobcom....
+739  | 07-10 08:06  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Import TVLtucking Services Mat4846 Date.8/7/26 Chassi#03 Driver A.bruno Helper C.pielago Ctnr#TLLU 1312360 Seal# Address.hyundai Engineering & construction Sucat. ✨✨✨✨✨✨ ATI in:0647 ATI out:1546 Arrival.2036 S unloading.0805 F unloading. Jobcom. Received.
+740  | 07-10 08:06  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Sent a photo.
+741  | 07-10 08:26  | EXCL-DRV  | Antonio Bruno          | —                                        | —             | 👏
+742  | 07-10 08:28  | FUEL      | IMEE BUENVIAJE         | —                                        | —             | sent a photo
+743  | 07-10 08:29  | FUEL      | IMEE BUENVIAJE         | —                                        | —             | Good Morning As of July 10 6am Available balance ₱-464.24 Thank you.
+744  | 07-10 08:46  | TVL-DOC   | Lemmar Lasto           | —                                        | —             | .otw to MIP NGR
+745  | 07-10 09:19  | TVL-DOC   | It's Me KING           | —                                        | —             | Sent a photo.
+746  | 07-10 09:23  | EXCL-DRV  | Don Don                | —                                        | —             | Sent a photo.
+747  | 07-10 09:34  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Wala prn location
+748  | 07-10 09:35  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Hanggang ngayon
+749  | 07-10 09:39  | EXCL-DRV  | Ronica Dacer           | —                                        | —             | Sige wait try ko mag email
+750  | 07-10 09:40  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Hayaan muna mAm antay nlng tau bukas Sabado na uwian nlng
+751  | 07-10 09:40  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Sent a photo.
+752  | 07-10 09:41  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Maam pumila ako kabit gps
+753  | 07-10 09:41  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Panigurado
+754  | 07-10 09:59  | TVL-DOC   | It's Me KING           | bobtail[confirmed]                       | FFAU3649830   | Nakalabas napo NDZ otw napo CLIENT
+755  | 07-10 10:01  | TVL-DOC   | Ronica Dacer           | —                                        | —             | 👍
+756  | 07-10 10:04  | TVL-DOC   | Lemmar                 | —                                        | ONEU3027491   | TVL TRUCKING SERVICES IMPORT LOADED MIP DRIVER: R.dumasis HELPER: L.lasto PLATE NO.: NJR7871 CHASSI NO.; TVL DATE: 07,10,26 CONT. NO.: SEAL NO.: SIZE: 1x40 CLIENT: ADDRESS: MIP IN: 930H 07,10,26 MIP OUT: WHSE. ARRIVAL:...
+757  | 07-10 10:04  | TVL-DOC   | Lemmar                 | —                                        | ONEU3027491   | TVL TRUCKING SERVICES IMPORT LOADED MIP DRIVER: R.dumasis HELPER: L.lasto PLATE NO.: NJR7871 CHASSI NO.; TVL DATE: 07,10,26 CONT. NO.: SEAL NO.: SIZE: 1x40 CLIENT: ADDRESS: MIP IN: 930H 07,10,26 MIP OUT: WHSE. ARRIVAL: S- UNLOAD: F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+758  | 07-10 10:09  | TVL-DOC   | Lemmar Lasto           | —                                        | —             | .otw sah harbor NGR
+759  | 07-10 10:09  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent a video.
+760  | 07-10 10:11  | EXCL-DRV  | Ancel                  | overtime_charges[possible]               | NBQ4410       | Bos-Madam dto npo kme s daiche silang kakarating lng po.. Ngloloko po ung hangin ng trak n stop bol po ako kanina s stoplight bago kumaliwa papunta dto s daiche gawa ng matagal mawala ung warning ng hangin s dasboard.. Igarahe ko muna po ito mamata
+761  | 07-10 10:11  | EXCL-DRV  | Ancel                  | —                                        | —             | Mamaya
+762  | 07-10 10:27  | TVL-DOC   | Lemmar                 | —                                        | —             | .otw sah harbor NGR
+763  | 07-10 10:27  | TVL-DOC   | Russel                 | —                                        | IAAU2909955   | Import TVLtucking Services Date:07-10-26 Zise#1x20 Chassis:#09 Driver ,A,REMO Helper,R, Diloy Ctnr#IAAU2909955 Seal#IAAJ517448 client:Ruize PHillippinez INC Address:Silang Cavite Mip in:0505H Mip out:0737H PEZA,IN,0945H PEZA,OUT,1007H...
+764  | 07-10 10:27  | TVL-DOC   | Russel                 | —                                        | IAAU2909955   | Import TVLtucking Services Date:07-10-26 Zise#1x20 Chassis:#09 Driver ,A,REMO Helper,R, Diloy Ctnr#IAAU2909955 Seal#IAAJ517448 client:Ruize PHillippinez INC Address:Silang Cavite Mip in:0505H Mip out:0737H PEZA,IN,0945H PEZA,OUT,1007H Arrival: S unloading: F unloading: Jobcom: Departure: Receive:
+765  | 07-10 10:39  | TVL-DOC   | Lemmar                 | —                                        | ONEU3027491   | TVL TRUCKING SERVICES IMPORT LOADED MIP DRIVER: R.dumasis HELPER: L.lasto PLATE NO.: NJR7871 CHASSI NO.; TVL DATE: 07,10,26 CONT. NO.: SEAL NO.: SIZE: 1x40 CLIENT: parang ADDRESS: MIP IN: 930H 07,10,26 MIP OUT:1009H 07,10,26 Harbor in:1037H 07,10,26 Harbor out: WHSE. ARRIVAL: S- UNLOAD: F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+766  | 07-10 11:06  | TVL-DOC   | Lemmar                 | —                                        | ONEU3027491   | TVL TRUCKING SERVICES IMPORT LOADED MIP DRIVER: R.dumasis HELPER: L.lasto PLATE NO.: NJR7871 CHASSI NO.; TVL DATE: 07,10,26 CONT. NO.: SEAL NO.: SIZE: 1x40 CLIENT: parang ADDRESS: MIP IN: 930H 07,10,26 MIP OUT:1009H 07,10,26 Harbor in:1037H 07,10,26 Harbor out: WHSE. ARRIVAL: S- UNLOAD: F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+767  | 07-10 11:06  | TVL-DOC   | Russel                 | —                                        | IAAU2909955   | Import TVLtucking Services Date:07-10-26 Zise#1x20 Chassis:#09 Driver ,A,REMO Helper,R, Diloy Ctnr#IAAU2909955 Seal#IAAJ517448 client:Ruize PHillippinez INC Address:Silang Cavite Mip in:0505H Mip out:0737H PEZA,IN,0945H PEZA,OUT,1007H...
+768  | 07-10 11:06  | TVL-DOC   | Russel                 | —                                        | IAAU2909955   | Import TVLtucking Services Date:07-10-26 Zise#1x20 Chassis:#09 Driver ,A,REMO Helper,R, Diloy Ctnr#IAAU2909955 Seal#IAAJ517448 client:Ruize PHillippinez INC Address:Silang Cavite Mip in:0505H Mip out:0737H PEZA,IN,0945H PEZA,OUT,1007H Arrival:1030H 07/10/26 S unloading:1105H 07/10/26 F unloading: Jobcom: Departure: Receive:
+769  | 07-10 11:06  | TVL-DOC   | Russel Diloy           | —                                        | —             | Sent a photo.
+770  | 07-10 11:09  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Christian Rex Pielago joined the video call.
+771  | 07-10 11:10  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Christian Rex Pielago joined the audio call.
+772  | 07-10 11:15  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Import TVLtucking Services Mat4846 Date.8/7/26 Chassi#03 Driver A.bruno Helper C.pielago Ctnr#TLLU 1312360 Seal# Address.hyundai Engineering & construction Sucat. ✨✨✨✨✨✨ ATI in:0647 ATI out:1546 Arrival.2036 S unloading.0805 F unloading.1109...
+773  | 07-10 11:15  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Import TVLtucking Services Mat4846 Date.8/7/26 Chassi#03 Driver A.bruno Helper C.pielago Ctnr#TLLU 1312360 Seal# Address.hyundai Engineering & construction Sucat. ✨✨✨✨✨✨ ATI in:0647 ATI out:1546 Arrival.2036 S unloading.0805 F unloading.1109 Jobcom.1111 Received.
+774  | 07-10 11:15  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Christian Rex Pielago sent a photo.
+775  | 07-10 11:16  | TVL-DOC   | Ronica Dacer           | —                                        | —             | Ano oras ko ibook empty nyo chat lang kayo sakin ha @Christian Rex Pielago
+776  | 07-10 11:16  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | 👍
+777  | 07-10 11:30  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Sent a photo.
+778  | 07-10 11:35  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent a video.
+779  | 07-10 11:39  | TVL-DOC   | Manuelito Meridor      | —                                        | —             | Naka pasok napo CBR holding
+780  | 07-10 11:48  | TVL-DOC   | Ronica Dacer           | —                                        | —             | 👍
+781  | 07-10 11:49  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | otw warehouse
+782  | 07-10 11:52  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent a photo.
+783  | 07-10 11:53  | TVL-DOC   | Cel Ed                 | —                                        | —             | Copy mam
+784  | 07-10 11:53  | TVL-DOC   | Christian              | —                                        | FFAU3649830   | TVL TRUCKING Import 07-10-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; B.BRAUN MEDICAL SUPPLIES INC. Address; SIP1 Brgy Mapagong Calamba Laguna Cont# FFAU 3649830 Seal# S.Line; ONE Size; 1x40 Chassi; Q,P Mip In;0540H...
+785  | 07-10 11:53  | TVL-DOC   | Christian              | —                                        | FFAU3649830   | TVL TRUCKING Import 07-10-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; B.BRAUN MEDICAL SUPPLIES INC. Address; SIP1 Brgy Mapagong Calamba Laguna Cont# FFAU 3649830 Seal# S.Line; ONE Size; 1x40 Chassi; Q,P Mip In;0540H 07-10 Mip Out;0838H 07-10 Client In; 1125H 07-10 S.Loading; F.Loading; J.Comp; Departure; Recieve;
+786  | 07-10 11:53  | TVL-DOC   | Ronica Dacer           | —                                        | —             | @Cel Ed nakabook na pala yan ng 10am deretso na kayo sa MIP
+787  | 07-10 11:54  | TVL-DOC   | Cel Ed                 | xray_dea_charges[confirmed]              | FFAU3649830   | X ray mam o wala
+788  | 07-10 11:54  | TVL-DOC   | Ronica Dacer           | —                                        | —             | Meron daw
+789  | 07-10 11:54  | TVL-DOC   | Ronica Dacer           | —                                        | —             | Deretso nayan ha naka manifest nayan
+790  | 07-10 11:55  | TVL-DOC   | Cel Ed                 | —                                        | —             | Cge
+791  | 07-10 11:57  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Loumeram Onad reacted ❤ to: Maraming salamat jong sa pagtulong kay luya Joel....
+792  | 07-10 12:03  | TVL-DOC   | Cel Ed                 | lalamove_fee[possible]                   | FFAU3649830   | Dokomento san kunin mam my xray pala traffic pa sa road10
+793  | 07-10 12:07  | TVL-DOC   | Russel                 | —                                        | IAAU2909955   | Import TVLtucking Services Date:07-10-26 Zise#1x20 Chassis:#09 Driver ,A,REMO Helper,R, Diloy Ctnr#IAAU2909955 Seal#IAAJ517448 client:Ruize PHillippinez INC Address:Silang Cavite Mip in:0505H Mip out:0737H PEZA,IN,0945H PEZA,OUT,1007H...
+794  | 07-10 12:07  | TVL-DOC   | Russel                 | —                                        | IAAU2909955   | Import TVLtucking Services Date:07-10-26 Zise#1x20 Chassis:#09 Driver ,A,REMO Helper,R, Diloy Ctnr#IAAU2909955 Seal#IAAJ517448 client:Ruize PHillippinez INC Address:Silang Cavite Mip in:0505H Mip out:0737H PEZA,IN,0945H PEZA,OUT,1007H Arrival:1030H 07/10/26 S unloading:1105H 07/10/26 F unloading:1145H 07/10/26 Jobcom:1158H 07/10/26 Departure:1220H 07/10/26 Receive:MAy an
+795  | 07-10 12:10  | EXCL-DRV  | Ancel Remo             | —                                        | —             | Ancel Remo reacted ❤ to: Maraming salamat jong sa pagtulong kay luya Joel....
+796  | 07-10 12:14  | TVL-DOC   | Lemmar                 | —                                        | GCXU5905041   | TVL TRUCKING SERVICES IMPORT LOADED MIP DRIVER: R.dumasis HELPER: L.lasto PLATE NO.: NJR7871 CHASSI NO.; TVL DATE: 07,10,26 CONT. NO.:GCXU5905041 SEAL NO.:KSC612842 SIZE: 1x40 CLIENT: OPARAN PHILS ADDRESS: KALAMBA LAGUNA MIP IN: 930H 07,10,26 MIP OUT:1009H 07,10,26 Harbor in:1037H 07,10,26 Harbor out:1210H 07,10,26 WHSE. ARRIVAL: S- UNLOAD: F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+797  | 07-10 12:19  | TVL-DOC   | Cel Ed                 | lalamove_fee[possible]                   | —             | Wala ho ba pa punta mip padala nalang sana yong aming dokomento mam
+798  | 07-10 12:19  | TVL-DOC   | Cel Ed                 | overtime_charges[possible]               | —             | Traffic ho sa road 10
+799  | 07-10 12:19  | TVL-DOC   | Lemmar Lasto           | —                                        | —             | .NGR palabas na sah rigger
+800  | 07-10 12:21  | TVL-DOC   | Russel Diloy           | —                                        | —             | Sent 19 photos.
+801  | 07-10 12:21  | TVL-DOC   | Russel Diloy           | —                                        | —             | Sent a photo.
+802  | 07-10 12:25  | TVL-DOC   | Christian Rex Pielago  | —                                        | TLLU1312360   | Otw mat4846 ATI
+803  | 07-10 12:40  | FUEL      | IMEE BUENVIAJE         | —                                        | —             | sent a photo
+804  | 07-10 12:40  | FUEL      | FUEL REFILLING TOTAL   | —                                        | —             | Bunso joined FUEL REFILLING TOTAL
+805  | 07-10 12:49  | TVL-DOC   | Lemmar Lasto           | —                                        | NGR7871       | Otw NGR7871 OPARAN
+806  | 07-10 13:19  | TVL-DOC   | Cel Ed                 | overtime_charges[possible]               | TIIU5522620   | Naka pila na papasok ng mip neg
+807  | 07-10 13:23  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Otw mat4846 ATI
+808  | 07-10 13:23  | TVL-DOC   | Lemmar                 | —                                        | NGR7871       | Otw NGR7871 OPARAN
+809  | 07-10 13:23  | TVL-DOC   | Jo-an                  | overtime_charges[possible]               | —             | Kanina tawagtawag kung bakit hinde nalabas. Ang track. Sa mip ngayon hay dto parang wang gana ibaba
+810  | 07-10 13:27  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | Kaya nga mga baliw akala ko kung gaano ka emergency
+811  | 07-10 13:28  | TVL-DOC   | Christian Rex Pielago  | —                                        | TLLU1312360   | Mat4846 gate in ATI
+812  | 07-10 13:32  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC...
+813  | 07-10 13:32  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC ADDRESS:Sta Maria Bulacan ATI IN: 04:56h ATI OUT: 11:49H PEZA ARR: WHSE. ARRIVAL: S- UNLOAD: F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+814  | 07-10 13:38  | EXCL-DRV  | Ancel Remo             | —                                        | —             | Sent a video.
+815  | 07-10 13:53  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | dito Napo Kame Pezza
+816  | 07-10 13:55  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC ADDRESS:Sta Maria Bulacan ATI IN: 04:56h ATI OUT: 11:49H PEZA ARR:13:55H WHSE. ARRIVAL: S- UNLOAD: F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+817  | 07-10 13:58  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Sent 2 photos.
+818  | 07-10 13:59  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Tapos napo Kami mag saule SA sout
+819  | 07-10 13:59  | TVL-DOC   | Christian Rex Pielago  | —                                        | —             | Sent a photo.
+820  | 07-10 14:12  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent 2 photos.
+821  | 07-10 14:12  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent a video.
+822  | 07-10 14:13  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Salang n po boss madam sa dea
+823  | 07-10 14:13  | TVL-DOC   | Ronica Dacer           | —                                        | —             | STANBY LANG HA
+824  | 07-10 14:14  | TVL-DOC   | Ronica Dacer           | —                                        | —             | tawagan ko agad kayo pag nasend na gatepass
+825  | 07-10 14:18  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Sent a photo.
+826  | 07-10 14:23  | TVL-DOC   | Ronica                 | —                                        | —             | STANBY LANG HA
+827  | 07-10 14:23  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC...
+828  | 07-10 14:23  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC ADDRESS:Sta Maria Bulacan ATI IN: 04:56h ATI OUT: 11:49H PEZA ARR:13:55H WHSE. ARRIVAL: 14:23H S- UNLOAD: F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+829  | 07-10 14:40  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC ADDRESS:Sta Maria Bulacan ATI IN: 04:56h ATI OUT: 11:49H PEZA ARR:13:55H WHSE. ARRIVAL: 14:23H S- UNLOAD: F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+830  | 07-10 14:40  | TVL-DOC   | Ronica                 | —                                        | —             | @Jhoseph D. Ariate PAG TAPOS NYO MAUNLO PASEND AGAD NG PICTURE NG CONTAINER PRA MAPREADVISE NTIN AGAD
+831  | 07-10 14:41  | TVL-DOC   | Ronica                 | —                                        | —             | PAG TAPOS NYO MAUNLOAD PASEND AGAD NG PICTURE NG CONTAINER PRA MAPREADVISE NTIN AGAD @Jhoseph D. Ariate
+832  | 07-10 14:45  | EXCL-DRV  | Rodolfo Dumasis        | —                                        | —             | Kuha isang carton
+833  | 07-10 14:54  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Bad yan
+834  | 07-10 14:55  | EXCL-DRV  | Rodolfo Dumasis        | —                                        | —             | 😆😆
+835  | 07-10 14:59  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Shared a reel.
+836  | 07-10 14:59  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Tama ka pastor
+837  | 07-10 15:17  | TVL-DOC   | Christian Rex Pielago  | —                                        | TLLU1312360   | Mat4846 gate in mip
+838  | 07-10 15:35  | TVL-DOC   | Christian Rex          | —                                        | TLLU1312360   | Mat4846 gate in mip
+839  | 07-10 15:35  | TVL-DOC   | Christian              | —                                        | FFAU3649830   | TVL TRUCKING Import 07-10-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; B.BRAUN MEDICAL SUPPLIES INC. Address; SIP1 Brgy Mapagong Calamba Laguna Cont# FFAU 3649830 Seal# S.Line; ONE Size; 1x40 Chassi; Q,P Mip In;0540H...
+840  | 07-10 15:35  | TVL-DOC   | Christian              | —                                        | FFAU3649830   | TVL TRUCKING Import 07-10-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; B.BRAUN MEDICAL SUPPLIES INC. Address; SIP1 Brgy Mapagong Calamba Laguna Cont# FFAU 3649830 Seal# S.Line; ONE Size; 1x40 Chassi; Q,P Mip In;0540H 07-10 Mip Out;0838H 07-10 Client In; 1125H 07-10 S.Loading;0335H 07-10 F.Loading; J.Comp; Departure; Recieve;
+841  | 07-10 15:55  | TVL-DOC   | Christian              | —                                        | FFAU3649830   | TVL TRUCKING Import 07-10-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; B.BRAUN MEDICAL SUPPLIES INC. Address; SIP1 Brgy Mapagong Calamba Laguna Cont# FFAU 3649830 Seal# S.Line; ONE Size; 1x40 Chassi; Q,P Mip In;0540H 07-10 Mip Out;0838H 07-10 Client In; 1125H 07-10 S.Loading;0335H 07-10 F.Loading; J.Comp; Departure; Recieve;
+842  | 07-10 15:55  | TVL-DOC   | Lemmar                 | —                                        | GCXU5905041   | TVL TRUCKING SERVICES IMPORT LOADED MIP DRIVER: R.dumasis HELPER: L.lasto PLATE NO.: NJR7871 CHASSI NO.; TVL DATE: 07,10,26 CONT. NO.:GCXU5905041 SEAL NO.:KSC612842 SIZE: 1x40 CLIENT: OPARAN PHILS ADDRESS: KALAMBA LAGUNA MIP...
+843  | 07-10 15:55  | TVL-DOC   | Lemmar                 | —                                        | GCXU5905041   | TVL TRUCKING SERVICES IMPORT LOADED MIP DRIVER: R.dumasis HELPER: L.lasto PLATE NO.: NJR7871 CHASSI NO.; TVL DATE: 07,10,26 CONT. NO.:GCXU5905041 SEAL NO.:KSC612842 SIZE: 1x40 CLIENT: OPARAN PHILS ADDRESS: KALAMBA LAGUNA MIP IN: 930H 07,10,26 MIP OUT:1009H 07,10,26 Harbor in:1037H 07,10,26 Harbor out:1210H 07,10,26 WHSE. ARRIVAL: 350H 07,10,26 S- UNLOAD: F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+844  | 07-10 16:04  | TVL-DOC   | Joshua Quidato         | —                                        | YMLU7435082   | NGT9149 tapos na po soli INLAND
+845  | 07-10 16:04  | TVL-DOC   | Joshua Quidato         | —                                        | —             | Sent 2 photos.
+846  | 07-10 16:05  | EXCL-DRV  | Ancel Remo             | —                                        | —             | Sent a video.
+847  | 07-10 16:06  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC...
+848  | 07-10 16:06  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC ADDRESS:Sta Maria Bulacan ATI IN: 04:56h ATI OUT: 11:49H PEZA ARR:13:55H WHSE. ARRIVAL: 14:23H S- UNLOAD: 16:05H F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+849  | 07-10 16:07  | EXCL-DRV  | Rodolfo Dumasis        | —                                        | —             | Cg maligo ka nlang🤣🤣
+850  | 07-10 16:08  | EXCL-DRV  | Ancel Remo             | —                                        | —             | Bawal maligo 🤣🤣🤣 Mabawasan ung libag s katawan😅
+851  | 07-10 16:09  | EXCL-DRV  | Ancel Remo             | —                                        | —             | Punta kna dto kua dolpo masarap s ganito mg 1 batel n🤣
+852  | 07-10 16:10  | EXCL-DRV  | Rodolfo Dumasis        | —                                        | —             | Mag order kna parating na ako
+853  | 07-10 16:10  | EXCL-DRV  | Rodolfo Dumasis        | —                                        | —             | 🤣🤣
+854  | 07-10 16:16  | EXCL-DRV  | Aldren Saldivar        | —                                        | —             | Sent 2 photos.
+855  | 07-10 16:17  | EXCL-DRV  | Ronica Dacer           | —                                        | —             | 👏
+856  | 07-10 16:43  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC ADDRESS:Sta Maria Bulacan ATI IN: 04:56h ATI OUT: 11:49H PEZA ARR:13:55H WHSE. ARRIVAL: 14:23H S- UNLOAD: 16:05H F- UNLOAD: JOB. COMP.: DEPARTURE: RECEIVED:
+857  | 07-10 16:43  | TVL-DOC   | Christian              | —                                        | FFAU3649830   | TVL TRUCKING Import 07-10-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; B.BRAUN MEDICAL SUPPLIES INC. Address; SIP1 Brgy Mapagong Calamba Laguna Cont# FFAU 3649830 Seal# S.Line; ONE Size; 1x40 Chassi; Q,P Mip In;0540H...
+858  | 07-10 16:43  | TVL-DOC   | Christian              | —                                        | FFAU3649830   | TVL TRUCKING Import 07-10-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; B.BRAUN MEDICAL SUPPLIES INC. Address; SIP1 Brgy Mapagong Calamba Laguna Cont# FFAU 3649830 Seal# S.Line; ONE Size; 1x40 Chassi; Q,P Mip In;0540H 07-10 Mip Out;0838H 07-10 Client In; 1125H 07-10 S.UnLoading;0335H 07-10 F.UnLoading;0439H 07-10 J.Comp; Departure; Recieve;
+859  | 07-10 16:45  | TVL-DOC   | Jhoseph                | —                                        | UETU7947596   | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC ADDRESS:Sta Maria Bulacan ATI IN: 04:56h ATI OUT: 11:49H PEZA ARR:13:55H WHSE. ARRIVAL: 14:23H S- UNLOAD: 16:05H F- UNLOAD: 16:45H JOB. COMP.: DEPARTURE: RECEIVED:
+860  | 07-10 16:49  | TVL-DOC   | Victoria Ronquillo Lu… | —                                        | —             | Picture agad
+861  | 07-10 16:50  | TVL-DOC   | Jhoseph D. Ariate      | —                                        | —             | Sent a photo.
+862  | 07-10 16:53  | TVL-DOC   | Cel Ed                 | overtime_charges[possible]               | —             | Palabas na daw si kuya aldren mam haba lng na pila
+863  | 07-10 16:53  | TVL-DOC   | Cel Ed                 | —                                        | —             | Sent 2 photos.
+864  | 07-10 17:21  | TVL-DOC   | Cel Ed                 | —                                        | —             | [image]
+865  | 07-10 17:21  | TVL-DOC   | Christian              | —                                        | FFAU3649830   | TVL TRUCKING Import 07-10-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; B.BRAUN MEDICAL SUPPLIES INC. Address; SIP1 Brgy Mapagong Calamba Laguna Cont# FFAU 3649830 Seal# S.Line; ONE Size; 1x40 Chassi; Q,P Mip In;0540H...
+866  | 07-10 17:21  | TVL-DOC   | Christian              | —                                        | FFAU3649830   | TVL TRUCKING Import 07-10-26 Plate# NDZ5710 Driver; RODRIGO RUBIO Helper; JASHEIM RUBIO Client; B.BRAUN MEDICAL SUPPLIES INC. Address; SIP1 Brgy Mapagong Calamba Laguna Cont# FFAU 3649830 Seal# S.Line; ONE Size; 1x40 Chassi; Q,P Mip In;0540H 07-10 Mip Out;0838H 07-10 Client In; 1125H 07-10 S.UnLoading;0335H 07-10 F.UnLoading;0439H 07-10 J.Comp;05:15H 07-10 Departure;05:20H 07-10 Recieve;vincent
+867  | 07-10 17:33  | TVL-DOC   | It's Me KING           | —                                        | —             | Sent 15 photos.
+868  | 07-10 17:51  | EXCL-DRV  | Victoria Ronquillo Lu… | —                                        | —             | 🎤 Sent a voice message.
+869  | 07-10 17:54  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | CBR MADAM
+870  | 07-10 17:54  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Uwi dn hay salamat
+871  | 07-10 17:54  | EXCL-DRV  | Victoria Ronquillo Lu… | —                                        | —             | Ituloy nyo yan then isauli daw sa PRLI Batangas
+872  | 07-10 17:58  | EXCL-DRV  | Antonio Bruno          | —                                        | —             | Copy madam.
+873  | 07-10 17:59  | EXCL-DRV  | Aldren Saldivar        | —                                        | —             | copy po mam...
+874  | 07-10 18:11  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Bagio na
+875  | 07-10 18:12  | EXCL-DRV  | Antonio Bruno          | —                                        | —             | Hindi pa cavite lang kol.
+876  | 07-10 18:19  | EXCL-DRV  | Jong Rubio             | —                                        | —             | Sent a video.
+877  | 07-10 18:50  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Gbi n dpaarin n lifted dea ko
+878  | 07-10 18:50  | EXCL-DRV  | Loumeram Onad          | —                                        | —             | Tulog malala
+879  | 07-10 18:52  | TVL-DOC   | Cel                    | —                                        | —             | IMPORT LOADED TVL TRUCKING DATE:07/10/26 SHIPPING LINE:MAESK DRIVER:ALDREN SALDIVAR HELPER:EDCEL PRINCESA PLATE#:NEG5077 CONTAINER#: MRSU5249780 DELIVERY ADDRESS:CORPBAY COMPOUND BRGY GANADO LIIP EXTENSION MAMPLASAN BINAN CITY LAGUNA SEAL#:ARLA CHASSIS #:TVL#02 SIZED:1X40 CLIENT:ARLA FOODS CORPORATION MIP IN: 1342H 07-10-26 MIP OUT: 1815H 07-10-26 ARRIVAL: START UNLOAD: FINISH UNLOAD: JOBCOMPLATE: DEPARTURE:
+880  | 07-10 18:53  | EXCL-DRV  | Victoria               | —                                        | —             | Sakto lang yan Ando para d ka na magkaproblema sa parking pero mamaya kapag malapit na matapos truck ban alamin mo uli
+881  | 07-10 19:01  | EXCL-DRV  | Loumeram               | —                                        | —             | Gbi n dpaarin n lifted dea ko
+882  | 07-10 19:01  | EXCL-DRV  | Loumeram               | —                                        | —             | Tulog malala
+883  | 07-10 19:01  | EXCL-DRV  | Loumeram               | —                                        | —             | Yung prosesor ang mg asikasu ntu madam sabi nya tawagan daw nya ako kng lifted n O mgtx sya kasi gbi n wala prn
+884  | 07-10 21:29  | TVL-DOC   | Lemmar                 | —                                        | —             | TVL TRUCKING SERVICES IMPORT LOADED MIP DRIVER: R.dumasis HELPER: L.lasto PLATE NO.: NJR7871 CHASSI NO.; TVL DATE: 07,10,26 CONT. NO.:GCXU5905041 SEAL NO.:KSC612842 SIZE: 1x40 CLIENT: OPARAN PHILS ADDRESS: KALAMBA LAGUNA MIP...
+885  | 07-10 21:29  | TVL-DOC   | Lemmar                 | —                                        | —             | TVL TRUCKING SERVICES IMPORT LOADED MIP DRIVER: R.dumasis HELPER: L.lasto PLATE NO.: NJR7871 CHASSI NO.; TVL DATE: 07,10,26 CONT. NO.:GCXU5905041 SEAL NO.:KSC612842 SIZE: 1x40 CLIENT: OPARAN PHILS ADDRESS: KALAMBA LAGUNA MIP IN: 930H 07,10,26 MIP OUT:1009H 07,10,26 Harbor in:1037H 07,10,26 Harbor out:1210H 07,10,26 WHSE. ARRIVAL: 350H 07,10,26 S- UNLOAD: 1925H 07,10,26 F- UNLOAD: 2105H07,10,26 JOB. COMP.: 2125H 07,10,26 DEPARTURE: 2130H 07,10,26 RECEIVED:
+886  | 07-10 21:33  | TVL-DOC   | Jhoseph                | —                                        | —             | TVL TRUCKING SERVICES IMPORT LOADED ATI ROYAL CARGO DRIVER: BRYLE PARDILLO HELPER: JOSEPH ARIATE PLATE NO.: NBQ4410 CHASSI NO.; TVL #01 DATE: 07-10-26 CONT. NO.: UETU7947596 SEAL NO.: SIZE: 1×40 TS LINE CLIENT: NORTHPOINT INC ADDRESS:Sta Maria Bulacan ATI IN: 04:56h ATI OUT: 11:49H PEZA ARR:13:55H WHSE. ARRIVAL: 14:23H S- UNLOAD: 16:05H F- UNLOAD: 16:45H JOB. COMP.: 18:20H DEPARTURE: 18:15H RECEIVED:
 ================================================================================================================================================================
 
 --- INCIDENTALS SUMMARY (grouped by trip) ---
 
-TRIP: TIIU5522620  (4 incidental record(s))
+TRIP: TIIU5522620  (6 incidental record(s))
    #366  overtime_charges [possible]  ←  "Baka ma towing kayo dyan or ma obstruction"
    #375  overtime_charges [possible]  ←  "Nag Dadatingan Pa Po Yung Mga Empty Nila Dito Na Platrack Kaya Di Pa …"
    #431  overtime_charges [possible]  ←  "Mam san ho kami mag hihintay di na pwd mag tagal kmi dito pinapa alis…"
    #439  overtime_charges [possible]  ←  "pinapalabas Napo Kame Dito Sa Rigging Mam"
+   #716  overtime_charges [possible]  ←  "Kong anu po yong pila kanina mas malala pa ngayon hay ... Naka pasok …"
+   #806  overtime_charges [possible]  ←  "Naka pila na papasok ng mip neg"
 
-TRIP: (unlinked)  (2 incidental record(s))
+TRIP: (unlinked)  (7 incidental record(s))
    #455  overtime_charges [possible]  ←  "ma,am kumosta po kami dito wala papoba kaming biyahe po"
    #483  bobtail [confirmed]  ←  "tapos napo kami mag sauli at nakargahan mapo kami ng empty"
+   #721  overtime_charges [possible]  ←  "HABA napo Ng Pila Ng South"
+   #797  lalamove_fee [possible]  ←  "Wala ho ba pa punta mip padala nalang sana yong aming dokomento mam"
+   #798  overtime_charges [possible]  ←  "Traffic ho sa road 10"
+   #809  overtime_charges [possible]  ←  "Kanina tawagtawag kung bakit hinde nalabas. Ang track. Sa mip ngayon …"
+   #862  overtime_charges [possible]  ←  "Palabas na daw si kuya aldren mam haba lng na pila"
+
+TRIP: NEG5077  (1 incidental record(s))
+   #625  detention [possible]  ←  "Aabutan na tayo ng truck ban dahil sa mga kapalpakan dyan sa ATI na y…"
+
+TRIP: CAAU6076804  (1 incidental record(s))
+   #724  overtime_charges [possible]  ←  "papasok Napo ATI NBQ"
+
+TRIP: CAP7500  (1 incidental record(s))
+   #726  overtime_charges [possible]  ←  "papasok napo ng holding si CAP7500"
+
+TRIP: TLLU1312360  (1 incidental record(s))
+   #728  overtime_charges [possible]  ←  "Mam hndi pa Po nakakalabas c kua ando ATI"
+
+TRIP: FFAU3649830  (5 incidental record(s))
+   #735  overtime_charges [possible]  ←  "Haba Daw Po Ng Pila Ng Dea Dito Sa ATI"
+   #737  overtime_charges [possible]  ←  "Haba Daw Po Ng Pila Ng Dea Dito Sa ATI"
+   #754  bobtail [confirmed]  ←  "Nakalabas napo NDZ otw napo CLIENT"
+   #787  xray_dea_charges [confirmed]  ←  "X ray mam o wala"
+   #792  lalamove_fee [possible]  ←  "Dokomento san kunin mam my xray pala traffic pa sa road10"
+
+TRIP: NBQ4410  (1 incidental record(s))
+   #760  overtime_charges [possible]  ←  "Bos-Madam dto npo kme s daiche silang kakarating lng po.. Ngloloko po…"

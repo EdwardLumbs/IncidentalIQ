@@ -13,14 +13,16 @@ binding = "DB"                 # code accesses it as env.DB
 database_name = "tripops"
 database_id = "fcbbbfd2-eee8-4238-8cb0-3790ecce33a9"
 
-# ── Cron: run the classifier every 6 hours, offset +15 min ──
+# ── Cron: run the classifier TWICE a day (halves the per-chat rulebook cost vs 4×/day) ──
 # Cloudflare crons are UTC-ONLY (no timezone field). PH is UTC+8, so to fire at PH wall-clock
-# 00:15 / 06:15 / 12:15 / 18:15 we subtract 8h → UTC 16:15 / 22:15 / 04:15 / 10:15 (hours 4,10,16,22).
-#   04:15 UTC = 12:15 PH | 10:15 UTC = 18:15 PH | 16:15 UTC = 00:15 PH | 22:15 UTC = 06:15 PH
-# The +15 offset is a cushion: the phone uploads on its own ~30-min cycle, so firing at :15 gives the
-# most recent upload time to land in D1 BEFORE the classifier reads (else it waits a full 6h).
+# 09:15 and 14:15 we subtract 8h → UTC 01:15 and 06:15 (hours 1,6).
+#   01:15 UTC = 09:15 PH  |  06:15 UTC = 14:15 PH
+# NOTE the spacing is intentional but uneven: the two runs are 5h apart (09:15 → 14:15), leaving a
+# ~19h gap overnight. Incidentals tolerate delay so that's fine, but the 09:15 run clears the whole
+# overnight backlog — if chat volume grows a lot, that run may hit MAX_MSGS_PER_RUN and defer the rest
+# to 14:15 (self-heals, no data lost). The +15 offset lets the phone's ~30-min upload land first.
 [triggers]
-crons = ["15 4,10,16,22 * * *"]
+crons = ["15 1,6 * * *"]
 
 # ── Secrets (NEVER in this file) — set once each with `wrangler secret put`:
 #      wrangler secret put GROQ_API_KEY     ← your Groq key
