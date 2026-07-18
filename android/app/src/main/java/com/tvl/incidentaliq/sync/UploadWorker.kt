@@ -1,10 +1,14 @@
 package com.tvl.incidentaliq.sync
 
 import android.content.Context
+import android.content.Intent
+import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.tvl.incidentaliq.capture.MonitorForegroundService
 import com.tvl.incidentaliq.core.AppLog
 import com.tvl.incidentaliq.core.Config
+import com.tvl.incidentaliq.core.Monitoring
 import com.tvl.incidentaliq.data.MessageStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,6 +29,16 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val ctx = applicationContext
+
+        // Self-heal: this worker runs every ~30 min, so it doubles as a keep-alive watchdog. If
+        // monitoring is ON, make sure the foreground service is running — recovering the case where it
+        // was killed and nothing restarted it (no reboot, no manual tap). Allowed to start from the
+        // background here because the app is battery-whitelisted + holds SYSTEM_ALERT_WINDOW.
+        if (Monitoring.isEnabled(ctx)) {
+            try { ContextCompat.startForegroundService(ctx, Intent(ctx, MonitorForegroundService::class.java)) }
+            catch (e: Exception) { AppLog.write(TAG, "keep-alive: could not (re)start service: ${e.message}") }
+        }
+
         val base = Config.backendUrl(ctx)
         val token = Config.apiToken(ctx)
         if (base.isBlank() || token.isBlank()) {

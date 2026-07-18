@@ -22,6 +22,8 @@ class MonitorForegroundService : Service() {
         }
     }
 
+    private var heartbeatRunning = false
+
     override fun onCreate() {
         super.onCreate()
         createChannel()
@@ -29,16 +31,24 @@ class MonitorForegroundService : Service() {
         AppLog.write("SERVICE", "=== MONITOR STARTED ===")
         AppLog.write("SERVICE", "Heartbeat interval: ${HEARTBEAT_INTERVAL / 1000}s")
         AppLog.write("SERVICE", "Log file: ${filesDir}/monitor.log")
-        handler.post(heartbeat)
     }
 
-    // START_STICKY: if the OS kills the service under memory pressure, recreate it (with a null
-    // intent) as soon as resources free up — so the 24/7 monitor self-heals without waiting for a
-    // reboot. onCreate() already (re)asserts startForeground on each recreation.
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    // Called on every startForegroundService() — including the keep-alive re-starts from UploadWorker
+    // and the master switch. Re-assert startForeground each time to satisfy Android's "call
+    // startForeground within 5s of startForegroundService" rule, but only arm the heartbeat ONCE so
+    // repeated starts don't stack duplicate runnables.
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(1, buildNotification())
+        if (!heartbeatRunning) {
+            heartbeatRunning = true
+            handler.post(heartbeat)
+        }
+        return START_STICKY  // OS recreates the service after a memory kill (self-heal, no reboot needed)
+    }
 
     override fun onDestroy() {
         handler.removeCallbacks(heartbeat)
+        heartbeatRunning = false
         AppLog.write("SERVICE", "=== MONITOR DESTROYED — service was killed ===")
         super.onDestroy()
     }

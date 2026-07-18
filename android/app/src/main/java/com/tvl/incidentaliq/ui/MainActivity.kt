@@ -28,17 +28,34 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // MASTER SWITCH. Monitoring ON/OFF now drives BOTH capture (the Monitoring flag the
+        // NotificationListener checks) AND the foreground keep-alive service (heartbeat) as ONE unit —
+        // so you can never land in the split-brain state (monitoring on, service dead) that let capture
+        // run unprotected. ON → set flag + start service; OFF → clear flag + stop service.
         binding.btnToggleMonitor.setOnClickListener {
             val next = !Monitoring.isEnabled(this)
             Monitoring.setEnabled(this, next)
-            log(if (next) "Monitoring ON — capturing messages" else "Monitoring OFF — not saving anything")
+            if (next) {
+                startForegroundService(Intent(this, MonitorForegroundService::class.java))
+                log("Monitoring ON — capture + keep-alive service started")
+            } else {
+                stopService(Intent(this, MonitorForegroundService::class.java))
+                log("Monitoring OFF — capture stopped + keep-alive service stopped")
+            }
             refreshMonitorButton()
         }
         refreshMonitorButton()
 
+        // Opening the app self-heals the service: if monitoring is ON but the service died (e.g. it was
+        // killed and never restarted), just launching the app brings it back.
+        if (Monitoring.isEnabled(this)) {
+            startForegroundService(Intent(this, MonitorForegroundService::class.java))
+        }
+
+        // Manual backup control (kept as a force-restart; the master switch above is the real control).
         binding.btnStartService.setOnClickListener {
             startForegroundService(Intent(this, MonitorForegroundService::class.java))
-            log("Foreground service started")
+            log("Foreground service started (manual)")
         }
 
         binding.btnWakeScreen.setOnClickListener {

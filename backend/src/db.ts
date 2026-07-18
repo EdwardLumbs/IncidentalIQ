@@ -414,9 +414,14 @@ function normDate(s: string, endOfDay = false): string {
   return toPh(s);
 }
 
-type IncFilter = { trip?: string | null; status?: string | null; group?: string | null; since?: string | null; until?: string | null; limit?: number };
+type IncFilter = { trip?: string | null; status?: string | null; group?: string | null; since?: string | null; until?: string | null; limit?: number; offset?: number };
 
-// GET /incidentals — join incidentals to their message, newest first, optional filters.
+// Clamp a limit to a sane page size, and a raw offset to >= 0. Shared by all list endpoints so
+// pagination behaves identically everywhere: page N = ?limit=L&offset=(N-1)*L.
+const clampLimit = (n?: number) => Math.min(Math.max(n ?? 200, 1), 10000);
+const clampOffset = (n?: number) => Math.max(n ?? 0, 0);
+
+// GET /incidentals — join incidentals to their message, newest first, optional filters + paging.
 export async function queryIncidentals(DB: D1Database, opts: IncFilter): Promise<any[]> {
   const clauses: string[] = [];
   const binds: any[] = [];
@@ -426,14 +431,15 @@ export async function queryIncidentals(DB: D1Database, opts: IncFilter): Promise
   if (opts.since) { binds.push(normDate(opts.since)); clauses.push(`m.timestamp >= ?${binds.length}`); }
   if (opts.until) { binds.push(normDate(opts.until, true)); clauses.push(`m.timestamp <= ?${binds.length}`); }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  binds.push(Math.min(opts.limit ?? 200, 10000));
+  binds.push(clampLimit(opts.limit)); const limIdx = binds.length;
+  binds.push(clampOffset(opts.offset)); const offIdx = binds.length;
 
   const rs = await DB.prepare(
     `SELECT i.id, i.incidental_type, i.status, i.confidence, i.trip_reference,
             m.group_name, m.source, m.sender, m.message, m.timestamp
      FROM incidentals i JOIN captured_messages m ON m.id = i.message_id
      ${where}
-     ORDER BY m.timestamp DESC LIMIT ?${binds.length}`,
+     ORDER BY m.timestamp DESC LIMIT ?${limIdx} OFFSET ?${offIdx}`,
   ).bind(...binds).all();
   return rs.results as any[];
 }
@@ -442,12 +448,14 @@ export async function queryIncidentals(DB: D1Database, opts: IncFilter): Promise
 // the distinct types, and the time span. Answers "which trips have incidentals" at a glance.
 export async function queryIncidentalsByTrip(
   DB: D1Database,
-  opts: { status?: string | null; group?: string | null },
+  opts: { status?: string | null; group?: string | null; since?: string | null; until?: string | null },
 ): Promise<any[]> {
   const clauses: string[] = [];
   const binds: any[] = [];
   if (opts.status) { binds.push(opts.status); clauses.push(`i.status = ?${binds.length}`); }
   if (opts.group) { binds.push(`%${opts.group}%`); clauses.push(`m.group_name LIKE ?${binds.length}`); }
+  if (opts.since) { binds.push(normDate(opts.since)); clauses.push(`m.timestamp >= ?${binds.length}`); }
+  if (opts.until) { binds.push(normDate(opts.until, true)); clauses.push(`m.timestamp <= ?${binds.length}`); }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
 
   const rs = await DB.prepare(
@@ -471,16 +479,20 @@ export async function queryIncidentalsByTrip(
 // an API). incidentals is an array so a message with multiple is fully represented.
 export async function queryMessages(
   DB: D1Database,
-  opts: { group?: string | null; since?: string | null; until?: string | null; incidental?: string | null; limit?: number },
+  opts: { trip?: string | null; group?: string | null; since?: string | null; until?: string | null; incidental?: string | null; limit?: number; offset?: number },
 ): Promise<any[]> {
   const clauses: string[] = [];
   const binds: any[] = [];
+  // trip filter: match the message's own trip_reference (case-insensitive) so you can pull a whole
+  // trip's conversation timeline, not just its incidentals.
+  if (opts.trip) { binds.push(opts.trip.toUpperCase()); clauses.push(`UPPER(m.trip_reference) = ?${binds.length}`); }
   if (opts.group) { binds.push(`%${opts.group}%`); clauses.push(`m.group_name LIKE ?${binds.length}`); }
   if (opts.since) { binds.push(normDate(opts.since)); clauses.push(`m.timestamp >= ?${binds.length}`); }
   if (opts.until) { binds.push(normDate(opts.until, true)); clauses.push(`m.timestamp <= ?${binds.length}`); }
   if (opts.incidental === "1" || opts.incidental === "true") { clauses.push(`m.is_incidental = 1`); }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  binds.push(Math.min(opts.limit ?? 200, 10000));
+  binds.push(clampLimit(opts.limit)); const limIdx = binds.length;
+  binds.push(clampOffset(opts.offset)); const offIdx = binds.length;
 
   // LEFT JOIN so clean messages still return; GROUP_CONCAT rolls a message's incidentals into one
   // "type:status|type:status" string we split back into an array below.
@@ -492,7 +504,7 @@ export async function queryMessages(
      LEFT JOIN incidentals i ON i.message_id = m.id
      ${where}
      GROUP BY m.id
-     ORDER BY m.timestamp DESC LIMIT ?${binds.length}`,
+     ORDER BY m.timestamp DESC LIMIT ?${limIdx} OFFSET ?${offIdx}`,
   ).bind(...binds).all();
 
   return (rs.results as any[]).map((r) => {
@@ -505,4 +517,36 @@ export async function queryMessages(
       : [];
     return { ...rest, incidentals };
   });
+}
+
+// GET /trips — the full trip registry: every known trip (container# or plate), regardless of whether
+// it has any incidentals, plus its driver/helper, plate↔container binding, and an incidental count.
+// Complements /incidentals?view=trips (which only lists trips that HAVE incidentals) by exposing the
+// complete set of trips the system has seen. Filters: group, since/until (on last_seen). Paged.
+export async function queryTrips(
+  DB: D1Database,
+  opts: { group?: string | null; since?: string | null; until?: string | null; limit?: number; offset?: number },
+): Promise<any[]> {
+  const clauses: string[] = [];
+  const binds: any[] = [];
+  if (opts.group) { binds.push(`%${opts.group}%`); clauses.push(`t.group_name LIKE ?${binds.length}`); }
+  if (opts.since) { binds.push(normDate(opts.since)); clauses.push(`t.last_seen >= ?${binds.length}`); }
+  if (opts.until) { binds.push(normDate(opts.until, true)); clauses.push(`t.last_seen <= ?${binds.length}`); }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  binds.push(clampLimit(opts.limit)); const limIdx = binds.length;
+  binds.push(clampOffset(opts.offset)); const offIdx = binds.length;
+
+  // Correlated subqueries fold in the plate↔container binding (the alias whose canonical is this trip)
+  // and a live incidental count, so one row is the complete view of a trip.
+  const rs = await DB.prepare(
+    `SELECT t.group_name, t.trip_reference, t.reference_type, t.driver, t.helper,
+            t.first_seen, t.last_seen,
+            (SELECT GROUP_CONCAT(l.alias) FROM trip_links l
+               WHERE l.group_name = t.group_name AND l.canonical = t.trip_reference) AS plate_aliases,
+            (SELECT COUNT(*) FROM incidentals i WHERE i.trip_reference = t.trip_reference) AS incidentals
+     FROM trips t
+     ${where}
+     ORDER BY t.last_seen DESC LIMIT ?${limIdx} OFFSET ?${offIdx}`,
+  ).bind(...binds).all();
+  return rs.results as any[];
 }

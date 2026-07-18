@@ -7,7 +7,7 @@ import {
 import {
   insertMessages, chatsWithUnclassified, unclassifiedFor, getSummary, getTrips,
   saveSummary, saveChunkResults, batchUpsertTrips, queryIncidentals, queryIncidentalsByTrip,
-  queryMessages, setSystemStatus, getSystemStatus, bumpMetrics,
+  queryMessages, queryTrips, setSystemStatus, getSystemStatus, bumpMetrics,
   getTripLinks, upsertTripLinks, applyTripLinks, nowPh,
 } from "./db.js";
 
@@ -26,6 +26,30 @@ const MAX_MSGS_PER_RUN_DEFAULT = 300; // cap messages classified per cron run so
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
+
+// One CSV cell: stringify (objects/arrays → JSON), then RFC-4180-quote if it contains a comma,
+// quote, or newline. Lets non-developers open any list endpoint directly in Excel/Sheets.
+function csvCell(v: unknown): string {
+  const s = v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+// Turn an array of flat row objects into a CSV string (header from the first row's keys).
+function toCsv(rows: any[]): string {
+  if (!rows.length) return "";
+  const cols = Object.keys(rows[0]);
+  const head = cols.map(csvCell).join(",");
+  const body = rows.map((r) => cols.map((c) => csvCell(r[c])).join(",")).join("\n");
+  return `${head}\n${body}`;
+}
+// Return `rows` as CSV when ?format=csv, else the normal JSON envelope. `key` names the JSON array.
+function listResponse(rows: any[], key: string, format: string | null): Response {
+  if (format === "csv") {
+    return new Response(toCsv(rows), {
+      headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${key}.csv"` },
+    });
+  }
+  return json({ ok: true, count: rows.length, [key]: rows });
+}
 
 // Parse a JSON request body, tolerating raw C0 control characters (e.g. a TAB pasted into a chat
 // message) that older clients may have failed to escape. Such chars are illegal inside JSON strings
@@ -80,30 +104,49 @@ export default {
       }
 
       // Dashboard: classified incidentals. Default = detail rows; ?view=trips = per-trip rollup
-      // ("which trips have incidentals"). Filters: trip, status, group, since, until, limit.
+      // ("which trips have incidentals"). Filters: trip, status, group, since, until, limit, offset.
+      // Add ?format=csv on any list endpoint for a spreadsheet-ready download.
       if (request.method === "GET" && url.pathname === "/incidentals") {
         const p = url.searchParams;
+        const format = p.get("format");
         if (p.get("view") === "trips") {
-          const trips = await queryIncidentalsByTrip(env.DB, { status: p.get("status"), group: p.get("group") });
-          return json({ ok: true, count: trips.length, trips });
+          const trips = await queryIncidentalsByTrip(env.DB, {
+            status: p.get("status"), group: p.get("group"),
+            since: p.get("since"), until: p.get("until"),
+          });
+          return listResponse(trips, "trips", format);
         }
         const rows = await queryIncidentals(env.DB, {
           trip: p.get("trip"), status: p.get("status"), group: p.get("group"),
           since: p.get("since"), until: p.get("until"),
-          limit: Number(p.get("limit")) || undefined,
+          limit: Number(p.get("limit")) || undefined, offset: Number(p.get("offset")) || undefined,
         });
-        return json({ ok: true, count: rows.length, incidentals: rows });
+        return listResponse(rows, "incidentals", format);
       }
 
-      // History browser: raw stored messages. Filters: group, since, until (date or ISO),
-      // incidental=1 (only flagged), limit. Mirrors the stored_messages export.
+      // History browser: raw stored messages. Filters: trip, group, since, until (date or ISO),
+      // incidental=1 (only flagged), limit, offset. ?trip=<container|plate> pulls a trip's whole
+      // conversation timeline. Add ?format=csv for a spreadsheet download.
       if (request.method === "GET" && url.pathname === "/messages") {
         const p = url.searchParams;
         const rows = await queryMessages(env.DB, {
-          group: p.get("group"), since: p.get("since"), until: p.get("until"),
-          incidental: p.get("incidental"), limit: Number(p.get("limit")) || undefined,
+          trip: p.get("trip"), group: p.get("group"), since: p.get("since"), until: p.get("until"),
+          incidental: p.get("incidental"),
+          limit: Number(p.get("limit")) || undefined, offset: Number(p.get("offset")) || undefined,
         });
-        return json({ ok: true, count: rows.length, messages: rows });
+        return listResponse(rows, "messages", p.get("format"));
+      }
+
+      // Trip registry: every known trip (container#/plate) whether or not it has incidentals, with
+      // driver/helper, plate↔container binding, and an incidental count. Filters: group, since, until
+      // (on last_seen), limit, offset. Add ?format=csv for a spreadsheet download.
+      if (request.method === "GET" && url.pathname === "/trips") {
+        const p = url.searchParams;
+        const rows = await queryTrips(env.DB, {
+          group: p.get("group"), since: p.get("since"), until: p.get("until"),
+          limit: Number(p.get("limit")) || undefined, offset: Number(p.get("offset")) || undefined,
+        });
+        return listResponse(rows, "trips", p.get("format"));
       }
 
       // Manual trigger for testing the classifier without waiting for the cron. Bumps the same
