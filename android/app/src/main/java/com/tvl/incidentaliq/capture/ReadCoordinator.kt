@@ -117,6 +117,11 @@ object ReadCoordinator {
             return
         }
 
+        // PHASE 1.5 — drive to the bottom BEFORE reading. Viber opens at the unread divider, not the
+        // newest message, so without this we'd re-capture whatever old screenful it landed on and miss
+        // the message that triggered the read. Cheap no-op when already at the bottom (Messenger).
+        svc.scrollToBottom()
+
         // PHASE 2 — settle: read ALL visible messages, store the new ones (dedup), and
         // linger to catch stragglers that arrive while we're looking (no notif fires for
         // the open chat). Close once it's been quiet for QUIET_MS, or at the hard cap.

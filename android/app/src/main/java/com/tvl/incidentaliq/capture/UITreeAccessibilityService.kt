@@ -18,6 +18,8 @@ class UITreeAccessibilityService : AccessibilityService() {
         private const val TAG = "TREE"
         const val ACTION_DUMP = "com.tvl.incidentaliq.DUMP"
         var instance: UITreeAccessibilityService? = null
+        private const val MAX_SCROLLS = 20        // hard cap so a huge unread backlog can't hang the read
+        private const val SCROLL_SETTLE_MS = 350L // let the list settle after each scroll before re-reading
     }
 
     // Internal dump trigger. Registered NOT_EXPORTED so no other app on the device can fire it
@@ -54,6 +56,73 @@ class UITreeAccessibilityService : AccessibilityService() {
             else -> return null
         }
         return pkg to msgs
+    }
+
+    /**
+     * Drive the conversation to the very BOTTOM (newest message) before we read it.
+     *
+     * Why this exists: the Trip Ops account is a silent member, so unread messages pile up. When the
+     * chat is opened via the notification's contentIntent, Viber lands at the UNREAD DIVIDER — which
+     * can be many screens ABOVE the newest message — not at the bottom. Without this, the read
+     * captures whatever old screenful it landed on (re-storing days-old messages with today's capture
+     * time) and MISSES the new message that actually triggered the read (e.g. the job sheet at the
+     * very bottom). Messenger usually opens at the bottom already, so for it this is a cheap no-op.
+     *
+     * Scrolls forward (toward newest) until a scroll can't move OR the visible message set stops
+     * changing, whichever comes first, with a hard iteration cap so a huge backlog can't hang the
+     * cycle. Side benefit: scrolling marks the backlog read, so future opens land at the bottom
+     * naturally and this gets cheaper over time.
+     */
+    fun scrollToBottom() {
+        for (i in 0 until MAX_SCROLLS) {
+            val root = rootInActiveWindow ?: return
+            val scroller = conversationScroller(root) ?: run {
+                AppLog.write(TAG, "scrollToBottom: no scrollable list found — reading as-is")
+                return
+            }
+            val sig = visibleSignature(root)
+            val moved = scroller.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+            Thread.sleep(SCROLL_SETTLE_MS)
+            // At the bottom when the list can't scroll further, OR the visible messages didn't change
+            // after a scroll (the return value lies on some ROMs, so we check content too).
+            if (!moved || visibleSignature(rootInActiveWindow) == sig) {
+                AppLog.write(TAG, "scrollToBottom: reached bottom after $i scroll(s)")
+                return
+            }
+        }
+        AppLog.write(TAG, "scrollToBottom: hit MAX_SCROLLS ($MAX_SCROLLS) cap — read may miss oldest backlog")
+    }
+
+    /** Fingerprint of the currently-visible messages, so we can tell when a scroll stopped moving. */
+    private fun visibleSignature(root: AccessibilityNodeInfo?): String {
+        root ?: return ""
+        val pkg = root.packageName?.toString() ?: return ""
+        val msgs = when (pkg) {
+            "com.viber.voip" -> ViberParser.parse(root)
+            "com.facebook.orca" -> MessengerParser.parse(root)
+            else -> return ""
+        }
+        return msgs.joinToString("|") { it.content }
+    }
+
+    /**
+     * The scrollable message list. Viber exposes it by id; Messenger obfuscates ids, so fall back to
+     * the TALLEST scrollable region on screen (the conversation list dwarfs any other scroller).
+     */
+    private fun conversationScroller(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        root.findAccessibilityNodeInfosByViewId("com.viber.voip:id/conversation_recycler_view")
+            ?.firstOrNull { it.isScrollable }?.let { return it }
+        val scrollers = ArrayList<AccessibilityNodeInfo>()
+        collectScrollables(root, scrollers)
+        return scrollers.maxByOrNull { n ->
+            val r = Rect(); n.getBoundsInScreen(r); r.height()
+        }
+    }
+
+    private fun collectScrollables(node: AccessibilityNodeInfo?, out: MutableList<AccessibilityNodeInfo>) {
+        node ?: return
+        if (node.isScrollable) out.add(node)
+        for (i in 0 until node.childCount) collectScrollables(node.getChild(i), out)
     }
 
     override fun onInterrupt() {
