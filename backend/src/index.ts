@@ -131,7 +131,7 @@ export default {
         const p = url.searchParams;
         const rows = await queryMessages(env.DB, {
           trip: p.get("trip"), group: p.get("group"), since: p.get("since"), until: p.get("until"),
-          incidental: p.get("incidental"),
+          incidental: p.get("incidental"), store_only: p.get("store_only"),
           limit: Number(p.get("limit")) || undefined, offset: Number(p.get("offset")) || undefined,
         });
         return listResponse(rows, "messages", p.get("format"));

@@ -73,15 +73,21 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Tracked group editors: load the saved lists, save back on tap.
+        // Group editors: load the saved lists (classify + store-only), save all back on one tap.
         binding.etViberGroups.setText(Config.trackedGroupsText(this, "VIBER"))
         binding.etMessengerGroups.setText(Config.trackedGroupsText(this, "MESSENGER"))
+        binding.etViberStoreOnly.setText(Config.storeOnlyGroupsText(this, "VIBER"))
+        binding.etMessengerStoreOnly.setText(Config.storeOnlyGroupsText(this, "MESSENGER"))
         binding.btnSaveGroups.setOnClickListener {
             Config.setTrackedGroups(this, "VIBER", binding.etViberGroups.text.toString())
             Config.setTrackedGroups(this, "MESSENGER", binding.etMessengerGroups.text.toString())
+            Config.setStoreOnlyGroups(this, "VIBER", binding.etViberStoreOnly.text.toString())
+            Config.setStoreOnlyGroups(this, "MESSENGER", binding.etMessengerStoreOnly.text.toString())
             val v = Config.trackedGroups(this, "VIBER").size
             val m = Config.trackedGroups(this, "MESSENGER").size
-            log("Saved tracked groups — Viber: $v, Messenger: $m  (0 = capture all)")
+            val sv = Config.storeOnlyGroups(this, "VIBER").size
+            val sm = Config.storeOnlyGroups(this, "MESSENGER").size
+            log("Saved — classify V:$v M:$m | store-only V:$sv M:$sm")
         }
 
         binding.btnDumpTree.setOnClickListener {

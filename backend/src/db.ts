@@ -16,6 +16,7 @@ export interface IncomingMessage {
   ts?: string;               // phone uses "ts" — alias for timestamp
   raw_notif?: number;        // 1 notif / 0 accessibility
   via_accessibility?: boolean; // phone field — inverse of raw_notif
+  store_only?: boolean;      // true = archive-only group; store it but NEVER send to Groq
 }
 
 // Dedup windows (content-hash + time). Two tiers, because the accessibility catch-up read re-reads
@@ -33,7 +34,7 @@ const dedupWindowFor = (message: string) =>
 // D1 caps bound parameters at 100 PER STATEMENT (stricter than SQLite's default). So each
 // statement must stay ≤100 binds — but we bundle many statements into one DB.batch() call, which
 // is a single subrequest. Net: a whole upload costs ~2 subrequests regardless of message count.
-const INSERT_ROWS_PER_STMT = 11;  // 11 rows × 9 cols = 99 binds (≤100)
+const INSERT_ROWS_PER_STMT = 9;   // 9 rows × 10 cols = 90 binds (≤100)
 const IN_HASHES_PER_STMT = 99;    // 99 hashes + 1 window bound = 100 binds (≤100)
 const STMTS_PER_BATCH = 50;       // statements bundled into one DB.batch() (= one subrequest)
 
@@ -67,7 +68,7 @@ function toPh(t?: string | null): string {
 
 interface PreparedMsg {
   source: string; group: string; sender: string | null; message: string;
-  image_url: string | null; ts: string; tsMs: number; rawNotif: number; hash: string;
+  image_url: string | null; ts: string; tsMs: number; rawNotif: number; hash: string; storeOnly: number;
 }
 
 // Insert a batch of uploaded messages, skipping duplicates. Duplicate = same content_hash within
@@ -95,8 +96,9 @@ export async function insertMessages(
     if (!isFinite(tsMs) || tsMs > nowMs + 3_600_000 || tsMs < nowMs - 2 * 86_400_000) tsMs = nowMs;
     const ts = phFromEpoch(tsMs);
     const rawNotif = m.raw_notif ?? (m.via_accessibility ? 0 : 1);
+    const storeOnly = m.store_only ? 1 : 0;
     const hash = await contentHash(source, group, message);
-    prepared.push({ source, group, sender: m.sender ?? null, message, image_url: m.image_url ?? null, ts, tsMs, rawNotif, hash });
+    prepared.push({ source, group, sender: m.sender ?? null, message, image_url: m.image_url ?? null, ts, tsMs, rawNotif, hash, storeOnly });
   }
   if (!prepared.length) return { inserted, skipped };
 
@@ -142,7 +144,7 @@ export async function insertMessages(
   if (!fresh.length) return { inserted, skipped };
 
   // 4) Multi-row INSERT statements (≤100 binds each), bundled into DB.batch() calls.
-  const COLS = 9;
+  const COLS = 10;
   const insertStmts: D1PreparedStatement[] = [];
   for (let i = 0; i < fresh.length; i += INSERT_ROWS_PER_STMT) {
     const slice = fresh.slice(i, i + INSERT_ROWS_PER_STMT);
@@ -152,11 +154,11 @@ export async function insertMessages(
     }).join(",");
     const binds: any[] = [];
     for (const p of slice) {
-      binds.push(p.source, p.group, p.sender, p.message, p.image_url, p.ts, p.rawNotif, p.hash, now);
+      binds.push(p.source, p.group, p.sender, p.message, p.image_url, p.ts, p.rawNotif, p.hash, now, p.storeOnly);
     }
     insertStmts.push(DB.prepare(
       `INSERT INTO captured_messages
-        (source, group_name, sender, message, image_url, timestamp, raw_notif, content_hash, synced_at)
+        (source, group_name, sender, message, image_url, timestamp, raw_notif, content_hash, synced_at, store_only)
        VALUES ${rowsSql}`,
     ).bind(...binds));
   }
@@ -171,7 +173,7 @@ export async function insertMessages(
 // Distinct chats that have unclassified messages waiting.
 export async function chatsWithUnclassified(DB: D1Database): Promise<string[]> {
   const rs = await DB.prepare(
-    "SELECT DISTINCT group_name FROM captured_messages WHERE classified_at IS NULL",
+    "SELECT DISTINCT group_name FROM captured_messages WHERE classified_at IS NULL AND store_only = 0",
   ).all();
   return (rs.results as any[]).map((r) => r.group_name);
 }
@@ -183,7 +185,7 @@ export interface DbMessage { id: number; sender: string | null; message: string;
 export async function unclassifiedFor(DB: D1Database, group: string, limit = 500): Promise<DbMessage[]> {
   const rs = await DB.prepare(
     `SELECT id, sender, message, timestamp FROM captured_messages
-     WHERE group_name = ?1 AND classified_at IS NULL ORDER BY timestamp ASC, id ASC LIMIT ?2`,
+     WHERE group_name = ?1 AND classified_at IS NULL AND store_only = 0 ORDER BY timestamp ASC, id ASC LIMIT ?2`,
   ).bind(group, limit).all();
   return rs.results as unknown as DbMessage[];
 }
@@ -479,7 +481,7 @@ export async function queryIncidentalsByTrip(
 // an API). incidentals is an array so a message with multiple is fully represented.
 export async function queryMessages(
   DB: D1Database,
-  opts: { trip?: string | null; group?: string | null; since?: string | null; until?: string | null; incidental?: string | null; limit?: number; offset?: number },
+  opts: { trip?: string | null; group?: string | null; since?: string | null; until?: string | null; incidental?: string | null; store_only?: string | null; limit?: number; offset?: number },
 ): Promise<any[]> {
   const clauses: string[] = [];
   const binds: any[] = [];
@@ -490,6 +492,9 @@ export async function queryMessages(
   if (opts.since) { binds.push(normDate(opts.since)); clauses.push(`m.timestamp >= ?${binds.length}`); }
   if (opts.until) { binds.push(normDate(opts.until, true)); clauses.push(`m.timestamp <= ?${binds.length}`); }
   if (opts.incidental === "1" || opts.incidental === "true") { clauses.push(`m.is_incidental = 1`); }
+  // store_only filter: =1 pulls ONLY archive-only groups, =0 excludes them; omit for everything.
+  if (opts.store_only === "1" || opts.store_only === "true") { clauses.push(`m.store_only = 1`); }
+  else if (opts.store_only === "0" || opts.store_only === "false") { clauses.push(`m.store_only = 0`); }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   binds.push(clampLimit(opts.limit)); const limIdx = binds.length;
   binds.push(clampOffset(opts.offset)); const offIdx = binds.length;
@@ -498,7 +503,7 @@ export async function queryMessages(
   // "type:status|type:status" string we split back into an array below.
   const rs = await DB.prepare(
     `SELECT m.id, m.source, m.group_name, m.sender, m.message, m.timestamp,
-            m.is_incidental, m.trip_reference, m.reference_type,
+            m.is_incidental, m.store_only, m.trip_reference, m.reference_type,
             GROUP_CONCAT(i.incidental_type || ':' || i.status, '|') AS inc_list
      FROM captured_messages m
      LEFT JOIN incidentals i ON i.message_id = m.id

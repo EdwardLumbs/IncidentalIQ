@@ -16,6 +16,10 @@ object Config {
     // Separate tracked-group lists per app. Newline-separated names, stored as one string each.
     private const val KEY_GROUPS_VIBER = "tracked_groups_viber"
     private const val KEY_GROUPS_MESSENGER = "tracked_groups_messenger"
+    // Store-only group lists per app: captured + uploaded like normal, but flagged so the backend
+    // NEVER sends them to Groq. A raw archive channel. Newline-separated names, one string each.
+    private const val KEY_STORE_VIBER = "store_only_groups_viber"
+    private const val KEY_STORE_MESSENGER = "store_only_groups_messenger"
 
     // Deployed Worker base URL. Stable + public (not a secret), so it's fine hardcoded here.
     // setBackendUrl(...) can still override it at runtime if the URL ever changes.
@@ -87,6 +91,45 @@ object Config {
         if (tracked.isEmpty()) return false   // fail closed — never capture untracked personal chats
         val cands = candidates.filter { it.isNotBlank() }.map { it.lowercase() }
         return tracked.any { t ->
+            val tl = t.lowercase()
+            cands.any { c -> c.contains(tl) }
+        }
+    }
+
+    // ── Store-only group chats ──────────────────────────────────────────────
+    // Mirror of the tracked lists, but for groups we ARCHIVE without classifying. A store-only group
+    // is captured + uploaded exactly like a tracked one; the only difference is its messages carry a
+    // store_only flag so the backend cron never feeds them to Groq. Same per-app split + matching.
+
+    private fun storeKey(source: String) =
+        if (source.equals("VIBER", true)) KEY_STORE_VIBER else KEY_STORE_MESSENGER
+
+    fun storeOnlyGroups(ctx: Context, source: String): Set<String> =
+        prefs(ctx).getString(storeKey(source), "")
+            ?.split("\n")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.toSet() ?: emptySet()
+
+    fun setStoreOnlyGroups(ctx: Context, source: String, raw: String) {
+        val cleaned = raw.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+        prefs(ctx).edit().putString(storeKey(source), cleaned.joinToString("\n")).apply()
+        AppLog.write("CFG", "$source store-only groups set: ${cleaned.size} (${cleaned.joinToString(" | ")})")
+    }
+
+    fun storeOnlyGroupsText(ctx: Context, source: String): String =
+        prefs(ctx).getString(storeKey(source), "") ?: ""
+
+    /**
+     * Is this notification's group an archive-only one? Same substring match as [isGroupTracked], but
+     * an EMPTY list simply means "no store-only groups" → returns false (safe default; unlike the
+     * tracked list there's no personal-chat risk to fail closed against here).
+     */
+    fun isStoreOnly(ctx: Context, source: String, candidates: List<String>): Boolean {
+        val store = storeOnlyGroups(ctx, source)
+        if (store.isEmpty()) return false
+        val cands = candidates.filter { it.isNotBlank() }.map { it.lowercase() }
+        return store.any { t ->
             val tl = t.lowercase()
             cands.any { c -> c.contains(tl) }
         }

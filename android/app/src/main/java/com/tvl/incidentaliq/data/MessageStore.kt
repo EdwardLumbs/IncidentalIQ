@@ -17,6 +17,7 @@ data class CapturedMessage(
     val content: String,
     val isImage: Boolean = false,
     val viaAccessibility: Boolean = false,   // false = straight from notification
+    val storeOnly: Boolean = false,          // true = archive-only group; backend won't send to Groq
     val capturedAt: Long = System.currentTimeMillis(),
 )
 
@@ -117,7 +118,7 @@ object MessageStore {
         val json = """{"ts":"${iso.format(Date(m.capturedAt))}","source":"${m.source}",""" +
             """"chat":"${esc(m.chat)}","sender":"${esc(m.sender)}",""" +
             """"content":"${esc(content)}","is_image":${m.isImage},""" +
-            """"via_accessibility":${m.viaAccessibility}}"""
+            """"via_accessibility":${m.viaAccessibility},"store_only":${m.storeOnly}}"""
         return try {
             file(ctx).appendText("$json\n")
             persistDedup(ctx)

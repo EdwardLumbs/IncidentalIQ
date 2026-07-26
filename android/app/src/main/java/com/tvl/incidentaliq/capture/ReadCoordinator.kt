@@ -37,6 +37,7 @@ object ReadCoordinator {
         val sender: String = "",        // sender from the notification, for the fallback save
         val fallbackText: String = "",  // truncated notif content, saved if the read fails (text only)
         val isImage: Boolean = false,   // image notifs have no useful text → no fallback save
+        val storeOnly: Boolean = false, // archive-only group → tag every message so backend skips Groq
     )
 
     /**
@@ -48,7 +49,7 @@ object ReadCoordinator {
     private fun saveFallback(ctx: Context, task: Task) {
         if (task.isImage || task.fallbackText.isBlank()) return
         val saved = MessageStore.save(
-            ctx, CapturedMessage(task.source, task.chatHint, task.sender, task.fallbackText, false, viaAccessibility = false)
+            ctx, CapturedMessage(task.source, task.chatHint, task.sender, task.fallbackText, false, viaAccessibility = false, storeOnly = task.storeOnly)
         )
         if (saved) AppLog.write(TAG, "saved truncated notification text as fallback (read failed)")
     }
@@ -129,7 +130,10 @@ object ReadCoordinator {
         var lastNewAt = started
         var totalNew = 0
         while (true) {
-            svc.readActiveChat()?.second?.forEach { m ->
+            svc.readActiveChat()?.second?.forEach { raw ->
+                // The parser doesn't know the group's list membership — stamp the task's store-only
+                // flag onto every message read in this cycle so the backend skips Groq for them.
+                val m = if (task.storeOnly) raw.copy(storeOnly = true) else raw
                 if (MessageStore.save(ctx, m)) {
                     totalNew++
                     lastNewAt = System.currentTimeMillis()

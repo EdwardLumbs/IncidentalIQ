@@ -64,33 +64,36 @@ class NotificationListener : NotificationListenerService() {
         val isSummary = (n.flags and Notification.FLAG_GROUP_SUMMARY) != 0 || sbn.id == Int.MAX_VALUE
         val isSystem = title in SYSTEM_SENDERS || title.contains("call", ignoreCase = true)
         val isNoise = isOngoing || isSummary || isSystem
-        // Tracked-group gate: empty list for this app = capture ALL (default until configured).
-        val tracked = Config.isGroupTracked(this, app, groupCandidates)
+        // Group gates. A group can be in the classify list, the store-only (archive) list, or neither.
+        // Capture if it's in EITHER list; store-only just flags the message so the backend skips Groq.
+        val classify = Config.isGroupTracked(this, app, groupCandidates)
+        val storeOnly = Config.isStoreOnly(this, app, groupCandidates)
+        val capture = classify || storeOnly
 
         AppLog.write(TAG, "─── NEW NOTIF ─── $app  id=${sbn.id}")
-        AppLog.write(TAG, "  sender=\"$sender\"  group=\"$groupName\"  truncated=$truncated  image=$imageLike  noise=$isNoise  tracked=$tracked")
+        AppLog.write(TAG, "  sender=\"$sender\"  group=\"$groupName\"  truncated=$truncated  image=$imageLike  noise=$isNoise  classify=$classify  storeOnly=$storeOnly")
         AppLog.write(TAG, "  content=\"${content.take(110)}\"")
 
         when {
             isNoise -> AppLog.write(TAG, "  ACTION: skipped (noise: ongoing=$isOngoing summary=$isSummary system=$isSystem)")
 
-            !tracked -> AppLog.write(TAG, "  ACTION: skipped (untracked group \"$groupName\" not in $app list)")
+            !capture -> AppLog.write(TAG, "  ACTION: skipped (group \"$groupName\" not in $app classify or store-only list)")
 
             truncated || imageLike -> {
-                AppLog.write(TAG, "  ACTION: enqueue accessibility READ (${if (truncated) "truncated" else "image"})")
+                AppLog.write(TAG, "  ACTION: enqueue accessibility READ (${if (truncated) "truncated" else "image"}${if (storeOnly) ", store-only" else ""})")
                 ReadCoordinator.enqueue(
                     this,
                     ReadCoordinator.Task(
                         app, sbn.packageName, groupName, n.contentIntent,
-                        sender = sender, fallbackText = content, isImage = imageLike,
+                        sender = sender, fallbackText = content, isImage = imageLike, storeOnly = storeOnly,
                     )
                 )
             }
 
             else -> {
                 // Short, full text already in the notification — store it directly.
-                AppLog.write(TAG, "  ACTION: full content from notification — stored directly")
-                MessageStore.save(this, CapturedMessage(app, groupName, sender, content, false, viaAccessibility = false))
+                AppLog.write(TAG, "  ACTION: full content from notification — stored directly${if (storeOnly) " (store-only)" else ""}")
+                MessageStore.save(this, CapturedMessage(app, groupName, sender, content, false, viaAccessibility = false, storeOnly = storeOnly))
             }
         }
     }
