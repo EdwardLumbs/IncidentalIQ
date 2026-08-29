@@ -1,6 +1,18 @@
-// Trip Ops Incidental Monitor — Cloudflare Worker entrypoint.
-//   fetch()     → REST API:  POST /messages  (phone upload) | GET /incidentals (dashboard)
-//   scheduled() → cron every 6h (+15m): classify unclassified messages with Groq, per chat, batched.
+// Trip Ops Incidental Monitor — Express entrypoint (converted from the Cloudflare Worker).
+//   HTTP     → REST API:  POST /messages  (phone upload) | GET /incidentals (dashboard) | ...
+//   node-cron → same cadence as the old Workers cron (twice daily, UTC): classify unclassified
+//               messages with Groq, per chat, batched.
+//
+// Behavior is UNCHANGED from the Worker version — this is a host conversion, not a redesign. The one
+// thing that's genuinely gone is the reason MAX_MSGS_PER_RUN existed: on Workers it capped a single
+// invocation's subrequests under Cloudflare's per-invocation ceiling. There's no such ceiling in a
+// long-lived Node process — it's kept here only as a general pacing knob (don't let one run hammer
+// Groq's own rate limits), not because anything requires it anymore.
+import "dotenv/config";
+import express, { type Request, type Response, type NextFunction } from "express";
+import cron from "node-cron";
+import { run as pgRun } from "./pg.js";
+import { initSchema } from "./schema.js";
 import {
   classifyBatch, CONTAINER_RE, PLATE_RE, normContainer, type BatchMessage,
 } from "./classifier.js";
@@ -11,21 +23,11 @@ import {
   getTripLinks, upsertTripLinks, applyTripLinks, nowPh,
 } from "./db.js";
 
-export interface Env {
-  DB: D1Database;
-  GROQ_API_KEY: string;
-  GROQ_MODEL: string;
-  API_TOKEN: string;          // shared secret the phone must present (Authorization: Bearer <token>)
-  BATCH_SIZE?: string;
-  MAX_MSGS_PER_RUN?: string;
-}
-
 // Hard limits.
-const MAX_UPLOAD = 1000;           // reject absurd uploads (#3) — the phone self-limits to 500
-const MAX_MSGS_PER_RUN_DEFAULT = 300; // cap messages classified per cron run so subrequests stay bounded
+const MAX_UPLOAD = 1000;              // reject absurd uploads — the phone self-limits to 500
+const MAX_MSGS_PER_RUN_DEFAULT = 300; // per-run pacing cap (see file header — no longer a hard ceiling)
 
-const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
+const PORT = Number(process.env.PORT) || 8790;
 
 // One CSV cell: stringify (objects/arrays → JSON), then RFC-4180-quote if it contains a comma,
 // quote, or newline. Lets non-developers open any list endpoint directly in Excel/Sheets.
@@ -41,14 +43,14 @@ function toCsv(rows: any[]): string {
   const body = rows.map((r) => cols.map((c) => csvCell(r[c])).join(",")).join("\n");
   return `${head}\n${body}`;
 }
-// Return `rows` as CSV when ?format=csv, else the normal JSON envelope. `key` names the JSON array.
-function listResponse(rows: any[], key: string, format: string | null): Response {
+// Send `rows` as CSV when ?format=csv, else the normal JSON envelope. `key` names the JSON array.
+function listResponse(res: Response, rows: any[], key: string, format: string | undefined) {
   if (format === "csv") {
-    return new Response(toCsv(rows), {
-      headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${key}.csv"` },
-    });
+    res.set("content-type", "text/csv; charset=utf-8");
+    res.set("content-disposition", `attachment; filename="${key}.csv"`);
+    return res.send(toCsv(rows));
   }
-  return json({ ok: true, count: rows.length, [key]: rows });
+  return res.json({ ok: true, count: rows.length, [key]: rows });
 }
 
 // Parse a JSON request body, tolerating raw C0 control characters (e.g. a TAB pasted into a chat
@@ -56,8 +58,7 @@ function listResponse(rows: any[], key: string, format: string | null): Response
 // and make a strict parse throw — which, on the upload path, used to deadlock the phone's queue
 // behind one poison message. On failure we escape any raw controls to \uXXXX (lossless — a real tab
 // round-trips back to a tab) and retry once. Returns null if it still can't be parsed.
-async function parseJsonTolerant(request: Request): Promise<any> {
-  const raw = await request.text().catch(() => "");
+function parseJsonTolerant(raw: string): any {
   try {
     return JSON.parse(raw);
   } catch {
@@ -70,131 +71,118 @@ async function parseJsonTolerant(request: Request): Promise<any> {
   }
 }
 
+// Wraps an async route handler so a rejected promise reaches the error middleware below instead of
+// becoming an unhandled rejection. Express 4 only auto-catches SYNCHRONOUS throws from a route handler
+// — every route here is async, so without this, an error inside one (a bad Groq response, a dropped
+// Postgres connection, anything) doesn't 500 the one request, it crashes the whole process. Learned
+// this the hard way testing /run against a since-retired Groq model: same shape as trip-monitoring's
+// own middleware/errorHandler.js asyncHandler, ported here since this backend is one file, not a
+// middleware/ directory.
+function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    fn(req, res, next).catch(next);
+  };
+}
+
 // Endpoints anyone may hit without the token (no data, no cost).
 const AUTH_EXEMPT = new Set(["/", "/health"]);
 
 // Constant-time-ish token check. Returns true if the request carries the right shared secret.
-function authorized(request: Request, env: Env): boolean {
-  if (!env.API_TOKEN) return false; // fail closed: no token configured → nobody gets in
-  const provided = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-  return provided.length > 0 && provided === env.API_TOKEN;
+function authorized(req: Request): boolean {
+  const token = process.env.API_TOKEN;
+  if (!token) return false; // fail closed: no token configured → nobody gets in
+  const provided = (req.headers.authorization ?? "").replace(/^Bearer\s+/i, "").trim();
+  return provided.length > 0 && provided === token;
 }
 
-export default {
-  // ── REST API ──────────────────────────────────────────────────────
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
+const app = express();
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (AUTH_EXEMPT.has(req.path) || authorized(req)) return next();
+  res.status(401).json({ ok: false, error: "unauthorized" });
+});
 
-    // Auth gate (#1): everything except the health/root check requires the shared secret.
-    if (!AUTH_EXEMPT.has(url.pathname) && !authorized(request, env)) {
-      return json({ ok: false, error: "unauthorized" }, 401);
-    }
+// Raw text body, parsed manually via parseJsonTolerant — only /messages carries a body.
+app.use(express.text({ type: () => true, limit: "5mb" }));
 
-    try {
-      // Phone uploads a batch of captured messages.
-      if (request.method === "POST" && url.pathname === "/messages") {
-        const body = await parseJsonTolerant(request);
-        const msgs = Array.isArray(body?.messages) ? body.messages : Array.isArray(body) ? body : null;
-        if (!msgs) return json({ ok: false, error: "expected { messages: [...] }" }, 400);
-        if (msgs.length > MAX_UPLOAD) {
-          return json({ ok: false, error: `too many messages; max ${MAX_UPLOAD} per request` }, 413);
-        }
-        const { inserted, skipped } = await insertMessages(env.DB, msgs);
-        return json({ ok: true, received: msgs.length, inserted, skipped });
-      }
+app.post("/messages", asyncHandler(async (req: Request, res: Response) => {
+  const body = parseJsonTolerant(typeof req.body === "string" ? req.body : "");
+  const msgs = Array.isArray(body?.messages) ? body.messages : Array.isArray(body) ? body : null;
+  if (!msgs) return res.status(400).json({ ok: false, error: "expected { messages: [...] }" });
+  if (msgs.length > MAX_UPLOAD) {
+    return res.status(413).json({ ok: false, error: `too many messages; max ${MAX_UPLOAD} per request` });
+  }
+  const { inserted, skipped } = await insertMessages(msgs);
+  res.json({ ok: true, received: msgs.length, inserted, skipped });
+}));
 
-      // Dashboard: classified incidentals. Default = detail rows; ?view=trips = per-trip rollup
-      // ("which trips have incidentals"). Filters: trip, status, group, since, until, limit, offset.
-      // Add ?format=csv on any list endpoint for a spreadsheet-ready download.
-      if (request.method === "GET" && url.pathname === "/incidentals") {
-        const p = url.searchParams;
-        const format = p.get("format");
-        if (p.get("view") === "trips") {
-          const trips = await queryIncidentalsByTrip(env.DB, {
-            status: p.get("status"), group: p.get("group"),
-            since: p.get("since"), until: p.get("until"),
-          });
-          return listResponse(trips, "trips", format);
-        }
-        const rows = await queryIncidentals(env.DB, {
-          trip: p.get("trip"), status: p.get("status"), group: p.get("group"),
-          since: p.get("since"), until: p.get("until"),
-          limit: Number(p.get("limit")) || undefined, offset: Number(p.get("offset")) || undefined,
-        });
-        return listResponse(rows, "incidentals", format);
-      }
+// Dashboard: classified incidentals. Default = detail rows; ?view=trips = per-trip rollup
+// ("which trips have incidentals"). Filters: trip, status, group, since, until, limit, offset.
+// Add ?format=csv on any list endpoint for a spreadsheet-ready download.
+app.get("/incidentals", asyncHandler(async (req: Request, res: Response) => {
+  const p = req.query as Record<string, string | undefined>;
+  const format = p.format;
+  if (p.view === "trips") {
+    const trips = await queryIncidentalsByTrip({
+      status: p.status ?? null, group: p.group ?? null, since: p.since ?? null, until: p.until ?? null,
+    });
+    return listResponse(res, trips, "trips", format);
+  }
+  const rows = await queryIncidentals({
+    trip: p.trip ?? null, status: p.status ?? null, group: p.group ?? null,
+    since: p.since ?? null, until: p.until ?? null,
+    limit: Number(p.limit) || undefined, offset: Number(p.offset) || undefined,
+  });
+  return listResponse(res, rows, "incidentals", format);
+}));
 
-      // History browser: raw stored messages. Filters: trip, group, since, until (date or ISO),
-      // incidental=1 (only flagged), limit, offset. ?trip=<container|plate> pulls a trip's whole
-      // conversation timeline. Add ?format=csv for a spreadsheet download.
-      if (request.method === "GET" && url.pathname === "/messages") {
-        const p = url.searchParams;
-        const rows = await queryMessages(env.DB, {
-          trip: p.get("trip"), group: p.get("group"), since: p.get("since"), until: p.get("until"),
-          incidental: p.get("incidental"), store_only: p.get("store_only"),
-          limit: Number(p.get("limit")) || undefined, offset: Number(p.get("offset")) || undefined,
-        });
-        return listResponse(rows, "messages", p.get("format"));
-      }
+// History browser: raw stored messages. Filters: trip, group, since, until (date or ISO),
+// incidental=1 (only flagged), limit, offset. ?trip=<container|plate> pulls a trip's whole
+// conversation timeline. Add ?format=csv for a spreadsheet download.
+app.get("/messages", asyncHandler(async (req: Request, res: Response) => {
+  const p = req.query as Record<string, string | undefined>;
+  const rows = await queryMessages({
+    trip: p.trip ?? null, group: p.group ?? null, since: p.since ?? null, until: p.until ?? null,
+    incidental: p.incidental ?? null, store_only: p.store_only ?? null,
+    limit: Number(p.limit) || undefined, offset: Number(p.offset) || undefined,
+  });
+  return listResponse(res, rows, "messages", p.format);
+}));
 
-      // Trip registry: every known trip (container#/plate) whether or not it has incidentals, with
-      // driver/helper, plate↔container binding, and an incidental count. Filters: group, since, until
-      // (on last_seen), limit, offset. Add ?format=csv for a spreadsheet download.
-      if (request.method === "GET" && url.pathname === "/trips") {
-        const p = url.searchParams;
-        const rows = await queryTrips(env.DB, {
-          group: p.get("group"), since: p.get("since"), until: p.get("until"),
-          limit: Number(p.get("limit")) || undefined, offset: Number(p.get("offset")) || undefined,
-        });
-        return listResponse(rows, "trips", p.get("format"));
-      }
+// Trip registry: every known trip (container#/plate) whether or not it has incidentals, with
+// driver/helper, plate↔container binding, and an incidental count. Filters: group, since, until
+// (on last_seen), limit, offset. Add ?format=csv for a spreadsheet download.
+app.get("/trips", asyncHandler(async (req: Request, res: Response) => {
+  const p = req.query as Record<string, string | undefined>;
+  const rows = await queryTrips({
+    group: p.group ?? null, since: p.since ?? null, until: p.until ?? null,
+    limit: Number(p.limit) || undefined, offset: Number(p.offset) || undefined,
+  });
+  return listResponse(res, rows, "trips", p.format);
+}));
 
-      // Manual trigger for testing the classifier without waiting for the cron. Bumps the same
-      // lifetime metrics the cron does, so a manual run is reflected at /health too.
-      if (request.method === "POST" && url.pathname === "/run") {
-        const r = await runClassifier(env);
-        await bumpMetrics(env.DB, {
-          batches: r.batches, tokens: r.tokens, incidentals: r.incidentals, processed: r.processed,
-        }).catch(() => {});
-        return json({ ok: true, ...r });
-      }
+// Manual trigger for testing the classifier without waiting for the cron. Bumps the same
+// lifetime metrics the cron does, so a manual run is reflected at /health too.
+app.post("/run", asyncHandler(async (_req: Request, res: Response) => {
+  const r = await runClassifier();
+  await bumpMetrics({
+    batches: r.batches, tokens: r.tokens, incidentals: r.incidentals, processed: r.processed,
+  }).catch(() => {});
+  res.json({ ok: true, ...r });
+}));
 
-      // Liveness + last-cron health (#5). Open (no token) but exposes no message data.
-      if (url.pathname === "/" || url.pathname === "/health") {
-        const status = await getSystemStatus(env.DB).catch(() => ({}));
-        return json({ ok: true, service: "tripops-monitor", status });
-      }
+// Liveness + last-cron health. Open (no token) but exposes no message data.
+app.get(["/", "/health"], asyncHandler(async (_req: Request, res: Response) => {
+  const status = await getSystemStatus().catch(() => ({}));
+  res.json({ ok: true, service: "tripops-monitor", status });
+}));
 
-      return json({ ok: false, error: "not found" }, 404);
-    } catch (e: any) {
-      // Log the real detail server-side; never leak DB/Groq internals to the caller.
-      console.error("request error:", String(e?.message ?? e));
-      return json({ ok: false, error: "internal error" }, 500);
-    }
-  },
+app.use((_req: Request, res: Response) => res.status(404).json({ ok: false, error: "not found" }));
 
-  // ── Cron: every 6h, +15 min offset (00:15/06:15/12:15/18:15 UTC) ──
-  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(
-      runClassifier(env)
-        .then(async (r) => {
-          await setSystemStatus(env.DB, "last_cron", JSON.stringify({ ok: true, ...r, at: nowPh() }));
-          // Accumulate lifetime totals (cron count, batches, Groq tokens, incidentals) for /health.
-          const totals = await bumpMetrics(env.DB, {
-            batches: r.batches, tokens: r.tokens, incidentals: r.incidentals, processed: r.processed,
-          }).catch(() => null);
-          console.log("cron done:", JSON.stringify(r), "totals:", JSON.stringify(totals));
-        })
-        .catch(async (e) => {
-          // Record the failure so it's visible at /health instead of vanishing silently.
-          const msg = String(e?.message ?? e);
-          await setSystemStatus(env.DB, "last_cron", JSON.stringify({ ok: false, error: msg, at: nowPh() }))
-            .catch(() => {});
-          console.error("cron FAILED:", msg);
-        }),
-    );
-  },
-};
+// Log the real detail server-side; never leak DB/Groq internals to the caller.
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("request error:", String(err?.message ?? err));
+  res.status(500).json({ ok: false, error: "internal error" });
+});
 
 // Extract the single trip identity a message names — a container# (canonical), or a plate resolved
 // to its bound container when the binding is known, else the bare plate. Returns null when the
@@ -211,30 +199,29 @@ function stampFor(message: string, links: Map<string, string>): { ref: string; t
 }
 
 // Core classification pass: for each chat with unclassified messages, batch → Groq → persist.
-// Bounded to MAX_MSGS_PER_RUN messages total so a big backlog can't exceed the Worker's
-// subrequest cap in a single invocation (the remainder is picked up by the next run).
-async function runClassifier(env: Env): Promise<{ chats: number; batches: number; incidentals: number; processed: number; tokens: number }> {
-  if (!env.GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
-  const model = env.GROQ_MODEL || "llama-3.3-70b-versatile";
-  const batchSize = Math.max(1, Number(env.BATCH_SIZE) || 25);
-  const maxPerRun = Math.max(1, Number(env.MAX_MSGS_PER_RUN) || MAX_MSGS_PER_RUN_DEFAULT);
+async function runClassifier(): Promise<{ chats: number; batches: number; incidentals: number; processed: number; tokens: number }> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY not set");
+  const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  const batchSize = Math.max(1, Number(process.env.BATCH_SIZE) || 25);
+  const maxPerRun = Math.max(1, Number(process.env.MAX_MSGS_PER_RUN) || MAX_MSGS_PER_RUN_DEFAULT);
   const contextTail = 5; // last N messages of prior chunk carried as reference
 
   let batches = 0, incidentalsTotal = 0, processed = 0, tokens = 0;
-  const chats = await chatsWithUnclassified(env.DB);
+  const chats = await chatsWithUnclassified();
 
   for (const group of chats) {
     if (processed >= maxPerRun) break;
-    const msgs = (await unclassifiedFor(env.DB, group)).slice(0, maxPerRun - processed);
+    const msgs = (await unclassifiedFor(group)).slice(0, maxPerRun - processed);
     if (!msgs.length) continue;
 
-    let summary = await getSummary(env.DB, group);
-    const trips = await getTrips(env.DB, group);
+    let summary = await getSummary(group);
+    const trips = await getTrips(group);
 
     // Build/refresh plate↔container bindings from this chat's job sheets (any message naming BOTH a
     // plate and a container binds them; the container is the canonical trip id). Scanning all of the
     // run's messages upfront means the binding is known even if the job sheet sits later in the run.
-    const links = await getTripLinks(env.DB, group);
+    const links = await getTripLinks(group);
     const newPairs: { alias: string; canonical: string }[] = [];
     for (const m of msgs) {
       const plates = [...new Set([...m.message.matchAll(PLATE_RE)].map((x) => x[0].toUpperCase()))];
@@ -248,8 +235,8 @@ async function runClassifier(env: Env): Promise<{ chats: number; batches: number
       }
     }
     if (newPairs.length) {
-      await upsertTripLinks(env.DB, group, newPairs);
-      await applyTripLinks(env.DB, group, newPairs); // fix rows already stored under the plate
+      await upsertTripLinks(group, newPairs);
+      await applyTripLinks(group, newPairs); // fix rows already stored under the plate
     }
     // Resolve a trip reference through the binding map: a plate with a known container → the container.
     const resolveRef = (ref: string | null, type: string | null) => {
@@ -267,7 +254,7 @@ async function runClassifier(env: Env): Promise<{ chats: number; batches: number
       ];
 
       const { out, meta } = await classifyBatch({
-        apiKey: env.GROQ_API_KEY, model, summary, trips, messages: batchMsgs,
+        apiKey, model, summary, trips, messages: batchMsgs,
       });
       tokens += meta?.usage?.total_tokens ?? 0;
 
@@ -293,7 +280,7 @@ async function runClassifier(env: Env): Promise<{ chats: number; batches: number
         if (stamp) tripStamp.set(m.id, stamp);
       }
 
-      const saved = await saveChunkResults(env.DB, chunkIds, chunkResults, tripStamp);
+      const saved = await saveChunkResults(chunkIds, chunkResults, tripStamp);
       incidentalsTotal += saved.incidentals;
 
       // Update the trip registry (batched): from classifier trip_references + container/plate regex.
@@ -306,12 +293,12 @@ async function runClassifier(env: Env): Promise<{ chats: number; batches: number
         for (const c of m.message.matchAll(CONTAINER_RE)) {
           tripRefs.push({ ref: normContainer(c[0]), type: "container_number" });
         }
-        // Plates are what field reports actually name — seed them so later reports link (#trip-linking).
+        // Plates are what field reports actually name — seed them so later reports link.
         for (const c of m.message.matchAll(PLATE_RE)) {
           tripRefs.push({ ref: c[0].toUpperCase(), type: "plate_number" });
         }
       }
-      await batchUpsertTrips(env.DB, group, tripRefs, seenAt);
+      await batchUpsertTrips(group, tripRefs, seenAt);
 
       // Feed newly-seen ids into the in-memory registry so LATER chunks in THIS run can link to them
       // too (getTrips only queried once, before the loop — a plate first seen in chunk 1 must be
@@ -328,8 +315,37 @@ async function runClassifier(env: Env): Promise<{ chats: number; batches: number
       processed += chunk.length;
     }
 
-    if (summary) await saveSummary(env.DB, group, summary);
+    if (summary) await saveSummary(group, summary);
   }
 
   return { chats: chats.length, batches, incidentals: incidentalsTotal, processed, tokens };
 }
+
+async function runClassifierAndRecord(): Promise<void> {
+  try {
+    const r = await runClassifier();
+    await setSystemStatus("last_cron", JSON.stringify({ ok: true, ...r, at: nowPh() }));
+    const totals = await bumpMetrics({
+      batches: r.batches, tokens: r.tokens, incidentals: r.incidentals, processed: r.processed,
+    }).catch(() => null);
+    console.log("cron done:", JSON.stringify(r), "totals:", JSON.stringify(totals));
+  } catch (e: any) {
+    const msg = String(e?.message ?? e);
+    await setSystemStatus("last_cron", JSON.stringify({ ok: false, error: msg, at: nowPh() })).catch(() => {});
+    console.error("cron FAILED:", msg);
+  }
+}
+
+async function main() {
+  await initSchema(async (sql: string) => pgRun(sql));
+
+  // Same cadence as the old Workers cron: twice daily, UTC 01:15 and 06:15 (PH 09:15 / 14:15).
+  cron.schedule("15 1,6 * * *", () => { runClassifierAndRecord(); }, { timezone: "UTC" });
+
+  app.listen(PORT, () => console.log(`tripops-monitor listening on :${PORT}`));
+}
+
+main().catch((e) => {
+  console.error("failed to start:", e);
+  process.exit(1);
+});
