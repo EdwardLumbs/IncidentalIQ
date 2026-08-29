@@ -8,6 +8,7 @@ import com.tvl.incidentaliq.core.Config
 import com.tvl.incidentaliq.core.Monitoring
 import com.tvl.incidentaliq.data.CapturedMessage
 import com.tvl.incidentaliq.data.MessageStore
+import com.tvl.incidentaliq.sync.Uploader
 
 class NotificationListener : NotificationListenerService() {
 
@@ -64,36 +65,45 @@ class NotificationListener : NotificationListenerService() {
         val isSummary = (n.flags and Notification.FLAG_GROUP_SUMMARY) != 0 || sbn.id == Int.MAX_VALUE
         val isSystem = title in SYSTEM_SENDERS || title.contains("call", ignoreCase = true)
         val isNoise = isOngoing || isSummary || isSystem
-        // Group gates. A group can be in the classify list, the store-only (archive) list, or neither.
-        // Capture if it's in EITHER list; store-only just flags the message so the backend skips Groq.
+        // Group gates. A group can be in the classify list, the store-only (archive) list, the
+        // immediate-upload list, or neither. Capture if it's in ANY list. Immediate groups are ALSO
+        // store-only (§Config.isImmediate) — a chat urgent enough to skip the 30-min batch is never
+        // one you'd want silently routed to Groq too, so being in that one box is enough on its own.
         val classify = Config.isGroupTracked(this, app, groupCandidates)
-        val storeOnly = Config.isStoreOnly(this, app, groupCandidates)
+        val storeOnlyListed = Config.isStoreOnly(this, app, groupCandidates)
+        val immediate = Config.isImmediate(this, app, groupCandidates)
+        val storeOnly = storeOnlyListed || immediate
         val capture = classify || storeOnly
 
         AppLog.write(TAG, "─── NEW NOTIF ─── $app  id=${sbn.id}")
-        AppLog.write(TAG, "  sender=\"$sender\"  group=\"$groupName\"  truncated=$truncated  image=$imageLike  noise=$isNoise  classify=$classify  storeOnly=$storeOnly")
+        AppLog.write(TAG, "  sender=\"$sender\"  group=\"$groupName\"  truncated=$truncated  image=$imageLike  noise=$isNoise  classify=$classify  storeOnly=$storeOnly  immediate=$immediate")
         AppLog.write(TAG, "  content=\"${content.take(110)}\"")
 
         when {
             isNoise -> AppLog.write(TAG, "  ACTION: skipped (noise: ongoing=$isOngoing summary=$isSummary system=$isSystem)")
 
-            !capture -> AppLog.write(TAG, "  ACTION: skipped (group \"$groupName\" not in $app classify or store-only list)")
+            !capture -> AppLog.write(TAG, "  ACTION: skipped (group \"$groupName\" not in $app classify, store-only, or immediate list)")
 
             truncated || imageLike -> {
-                AppLog.write(TAG, "  ACTION: enqueue accessibility READ (${if (truncated) "truncated" else "image"}${if (storeOnly) ", store-only" else ""})")
+                AppLog.write(TAG, "  ACTION: enqueue accessibility READ (${if (truncated) "truncated" else "image"}${if (storeOnly) ", store-only" else ""}${if (immediate) ", immediate" else ""})")
                 ReadCoordinator.enqueue(
                     this,
                     ReadCoordinator.Task(
                         app, sbn.packageName, groupName, n.contentIntent,
                         sender = sender, fallbackText = content, isImage = imageLike, storeOnly = storeOnly,
+                        immediate = immediate,
                     )
                 )
             }
 
             else -> {
                 // Short, full text already in the notification — store it directly.
-                AppLog.write(TAG, "  ACTION: full content from notification — stored directly${if (storeOnly) " (store-only)" else ""}")
-                MessageStore.save(this, CapturedMessage(app, groupName, sender, content, false, viaAccessibility = false, storeOnly = storeOnly))
+                AppLog.write(TAG, "  ACTION: full content from notification — stored directly${if (storeOnly) " (store-only)" else ""}${if (immediate) " (immediate)" else ""}")
+                val saved = MessageStore.save(this, CapturedMessage(app, groupName, sender, content, false, viaAccessibility = false, storeOnly = storeOnly))
+                if (saved && immediate) {
+                    AppLog.write(TAG, "  immediate group — syncing now")
+                    Uploader.syncNow(this)
+                }
             }
         }
     }

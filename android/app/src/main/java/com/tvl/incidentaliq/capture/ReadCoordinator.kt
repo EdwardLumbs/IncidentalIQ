@@ -12,6 +12,7 @@ import com.tvl.incidentaliq.core.AppLog
 import com.tvl.incidentaliq.core.WakeLockHelper
 import com.tvl.incidentaliq.data.CapturedMessage
 import com.tvl.incidentaliq.data.MessageStore
+import com.tvl.incidentaliq.sync.Uploader
 
 /**
  * Drives the read cycle for a truncated/image notification, ONE at a time:
@@ -38,6 +39,7 @@ object ReadCoordinator {
         val fallbackText: String = "",  // truncated notif content, saved if the read fails (text only)
         val isImage: Boolean = false,   // image notifs have no useful text → no fallback save
         val storeOnly: Boolean = false, // archive-only group → tag every message so backend skips Groq
+        val immediate: Boolean = false, // immediate-upload group → sync as soon as something is saved
     )
 
     /**
@@ -51,7 +53,13 @@ object ReadCoordinator {
         val saved = MessageStore.save(
             ctx, CapturedMessage(task.source, task.chatHint, task.sender, task.fallbackText, false, viaAccessibility = false, storeOnly = task.storeOnly)
         )
-        if (saved) AppLog.write(TAG, "saved truncated notification text as fallback (read failed)")
+        if (saved) {
+            AppLog.write(TAG, "saved truncated notification text as fallback (read failed)")
+            if (task.immediate) {
+                AppLog.write(TAG, "immediate group — syncing now")
+                Uploader.syncNow(ctx)
+            }
+        }
     }
 
     private val queue = ArrayDeque<Task>()
@@ -146,6 +154,10 @@ object ReadCoordinator {
             Thread.sleep(RESCAN_MS)
         }
         AppLog.write(TAG, "captured $totalNew new message(s) from \"${task.chatHint}\"")
+        if (totalNew > 0 && task.immediate) {
+            AppLog.write(TAG, "immediate group — syncing now")
+            Uploader.syncNow(ctx)
+        }
 
         // PHASE 3 — close: back to home, release the wake lock.
         Thread.sleep(200)

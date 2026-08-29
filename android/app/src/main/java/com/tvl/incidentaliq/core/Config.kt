@@ -20,10 +20,16 @@ object Config {
     // NEVER sends them to Groq. A raw archive channel. Newline-separated names, one string each.
     private const val KEY_STORE_VIBER = "store_only_groups_viber"
     private const val KEY_STORE_MESSENGER = "store_only_groups_messenger"
+    // Immediate-upload group lists per app: same "never sent to Groq" archive as store-only, but ALSO
+    // triggers a one-off upload as soon as the message is captured, instead of waiting for the ~30 min
+    // periodic worker. For chats where you need it to land in the database right away.
+    private const val KEY_IMMEDIATE_VIBER = "immediate_groups_viber"
+    private const val KEY_IMMEDIATE_MESSENGER = "immediate_groups_messenger"
 
-    // Deployed Worker base URL. Stable + public (not a secret), so it's fine hardcoded here.
-    // setBackendUrl(...) can still override it at runtime if the URL ever changes.
-    private const val DEFAULT_URL = "https://tripops-monitor.programmeredward.workers.dev"
+    // Deployed backend base URL — the home server, not the old Cloudflare Worker. Stable + public
+    // (not a secret), so it's fine hardcoded here. setBackendUrl(...) can still override it at
+    // runtime if the URL ever changes.
+    private const val DEFAULT_URL = "https://tvl-incidentaliq.bowfin-escalator.ts.net"
     // Shared secret sent as `Authorization: Bearer <token>` — must match the Worker's API_TOKEN.
     // Comes from BuildConfig (fed by gitignored local.properties), so it's compiled into the APK
     // but never committed to source control. setApiToken(...) can still override at runtime.
@@ -130,6 +136,42 @@ object Config {
         if (store.isEmpty()) return false
         val cands = candidates.filter { it.isNotBlank() }.map { it.lowercase() }
         return store.any { t ->
+            val tl = t.lowercase()
+            cands.any { c -> c.contains(tl) }
+        }
+    }
+
+    // ── Immediate-upload group chats ─────────────────────────────────────────
+    // A third list: same store-only archive semantics (never sent to Groq — see [isStoreOnly]), but
+    // capture also fires an immediate upload instead of waiting for the periodic worker. Kept as its
+    // own list rather than a modifier on the other two so a chat's urgency is one line in one box, not
+    // something you have to also remember to add to store-only.
+
+    private fun immediateKey(source: String) =
+        if (source.equals("VIBER", true)) KEY_IMMEDIATE_VIBER else KEY_IMMEDIATE_MESSENGER
+
+    fun immediateGroups(ctx: Context, source: String): Set<String> =
+        prefs(ctx).getString(immediateKey(source), "")
+            ?.split("\n")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.toSet() ?: emptySet()
+
+    fun setImmediateGroups(ctx: Context, source: String, raw: String) {
+        val cleaned = raw.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+        prefs(ctx).edit().putString(immediateKey(source), cleaned.joinToString("\n")).apply()
+        AppLog.write("CFG", "$source immediate groups set: ${cleaned.size} (${cleaned.joinToString(" | ")})")
+    }
+
+    fun immediateGroupsText(ctx: Context, source: String): String =
+        prefs(ctx).getString(immediateKey(source), "") ?: ""
+
+    /** Is this notification's group flagged for immediate upload? Same substring match as the others. */
+    fun isImmediate(ctx: Context, source: String, candidates: List<String>): Boolean {
+        val immediate = immediateGroups(ctx, source)
+        if (immediate.isEmpty()) return false
+        val cands = candidates.filter { it.isNotBlank() }.map { it.lowercase() }
+        return immediate.any { t ->
             val tl = t.lowercase()
             cands.any { c -> c.contains(tl) }
         }

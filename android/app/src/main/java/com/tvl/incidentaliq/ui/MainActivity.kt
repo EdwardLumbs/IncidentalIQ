@@ -73,21 +73,27 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Group editors: load the saved lists (classify + store-only), save all back on one tap.
+        // Group editors: load the saved lists (classify + store-only + immediate), save all back on one tap.
         binding.etViberGroups.setText(Config.trackedGroupsText(this, "VIBER"))
         binding.etMessengerGroups.setText(Config.trackedGroupsText(this, "MESSENGER"))
         binding.etViberStoreOnly.setText(Config.storeOnlyGroupsText(this, "VIBER"))
         binding.etMessengerStoreOnly.setText(Config.storeOnlyGroupsText(this, "MESSENGER"))
+        binding.etViberImmediate.setText(Config.immediateGroupsText(this, "VIBER"))
+        binding.etMessengerImmediate.setText(Config.immediateGroupsText(this, "MESSENGER"))
         binding.btnSaveGroups.setOnClickListener {
             Config.setTrackedGroups(this, "VIBER", binding.etViberGroups.text.toString())
             Config.setTrackedGroups(this, "MESSENGER", binding.etMessengerGroups.text.toString())
             Config.setStoreOnlyGroups(this, "VIBER", binding.etViberStoreOnly.text.toString())
             Config.setStoreOnlyGroups(this, "MESSENGER", binding.etMessengerStoreOnly.text.toString())
+            Config.setImmediateGroups(this, "VIBER", binding.etViberImmediate.text.toString())
+            Config.setImmediateGroups(this, "MESSENGER", binding.etMessengerImmediate.text.toString())
             val v = Config.trackedGroups(this, "VIBER").size
             val m = Config.trackedGroups(this, "MESSENGER").size
             val sv = Config.storeOnlyGroups(this, "VIBER").size
             val sm = Config.storeOnlyGroups(this, "MESSENGER").size
-            log("Saved — classify V:$v M:$m | store-only V:$sv M:$sm")
+            val iv = Config.immediateGroups(this, "VIBER").size
+            val im = Config.immediateGroups(this, "MESSENGER").size
+            log("Saved — classify V:$v M:$m | store-only V:$sv M:$sm | immediate V:$iv M:$im")
         }
 
         binding.btnDumpTree.setOnClickListener {
