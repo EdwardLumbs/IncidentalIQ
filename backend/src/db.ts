@@ -156,6 +156,97 @@ export async function insertMessages(
   return { inserted, skipped };
 }
 
+// ── Captured photos ───────────────────────────────────────────────────────────────────────────
+// An image upload is SELF-CONTAINED: it carries the chat, sender, time and album key, and creates
+// the bubble row itself. It does NOT wait for, or depend on, the text batch — those go through a
+// dedup window that can legitimately drop a re-read, and a photo must never be lost because the
+// sentence describing it was deduped. The phone therefore does not send album bubbles through
+// /messages at all; this is the only path that creates one.
+
+export interface ImageMeta {
+  source: string;            // "VIBER" | "MESSENGER" (any case)
+  group_name?: string; chat?: string;
+  sender?: string | null;
+  timestamp?: string; ts?: string;
+  album_key: string;         // phone-generated: identifies the BUBBLE (chat + sender + time + count)
+  seq?: number;              // 1-based position within the album
+  count?: number;            // how many photos the phone saw in the bubble
+  store_only?: boolean;
+}
+
+// The bubble's display text. The panel shows the photos themselves; this is what the message list,
+// the CSV export and any text search have to read.
+const albumLabel = (n: number) => (n > 1 ? `[${n} photos]` : "[photo]");
+
+/**
+ * Find (or create) the captured_messages row for an album, then record one photo against it.
+ * Idempotent on BOTH halves: re-uploading photo 2 of 4 after a crash neither duplicates the bubble
+ * (unique album_key) nor the photo (unique message_id+sha256).
+ */
+export async function saveImage(
+  meta: ImageMeta,
+  img: { hash: string; path: string; bytes: number; width: number | null; height: number | null },
+): Promise<{ message_id: number; image_id: number | null }> {
+  const source = normalizeSource(meta.source);
+  const group = (meta.group_name ?? meta.chat ?? "").trim();
+  const ts = toPh(meta.timestamp ?? meta.ts);
+  const count = Math.max(1, Number(meta.count) || 1);
+  const seq = Math.max(1, Number(meta.seq) || 1);
+  const now = nowPh();
+  const message = albumLabel(count);
+  const hash = await contentHash(source, group, `${message}|${meta.album_key}`);
+
+  return tx(async (t) => {
+    // classified_at is stamped at creation ON PURPOSE: "[4 photos]" carries no text for Groq to
+    // read, so leaving it null would feed a meaningless row into every classifier run and bill
+    // tokens for it. The photos are stored evidence, not classifier input.
+    await t.run(
+      `INSERT INTO incidentaliq.captured_messages
+        (source, group_name, sender, message, timestamp, raw_notif, content_hash, synced_at,
+         store_only, album_key, image_count, classified_at)
+       VALUES ($1,$2,$3,$4,$5,0,$6,$7,$8,$9,$10,$7)
+       -- The index is PARTIAL (album_key IS NOT NULL, so text messages don't all collide on NULL),
+       -- and Postgres only infers a partial index when the predicate is repeated here.
+       ON CONFLICT (album_key) WHERE album_key IS NOT NULL DO NOTHING`,
+      [source, group, meta.sender ?? null, message, ts, hash, now, meta.store_only ? 1 : 0,
+       meta.album_key, count],
+    );
+    const row = await t.get<{ id: number; image_count: number | null }>(
+      "SELECT id, image_count FROM incidentaliq.captured_messages WHERE album_key = $1",
+      [meta.album_key],
+    );
+    if (!row) throw new Error("album row missing right after upsert");
+
+    // A later photo can reveal the bubble held more than the first upload claimed (the phone counts
+    // what it can see, and a tall album needs scrolling). Grow the expectation, never shrink it.
+    if (count > (row.image_count ?? 0) || seq > (row.image_count ?? 0)) {
+      await t.run(
+        "UPDATE incidentaliq.captured_messages SET image_count = GREATEST(COALESCE(image_count,0), $2, $3) WHERE id = $1",
+        [row.id, count, seq],
+      );
+    }
+
+    const ins = await t.get<{ id: number }>(
+      `INSERT INTO incidentaliq.message_images (message_id, seq, sha256, path, bytes, width, height, received_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT (message_id, sha256) DO NOTHING
+       RETURNING id`,
+      [row.id, seq, img.hash, img.path, img.bytes, img.width, img.height, now],
+    );
+    return { message_id: row.id, image_id: ins?.id ?? null };
+  });
+}
+
+// Where a stored photo lives, for GET /images/:sha. A hash can belong to several chats (same photo
+// forwarded) but they all point at one file, so any row answers.
+export async function getImagePath(hash: string): Promise<string | null> {
+  const row = await get<{ path: string }>(
+    "SELECT path FROM incidentaliq.message_images WHERE sha256 = $1 LIMIT 1",
+    [hash],
+  );
+  return row?.path ?? null;
+}
+
 // Distinct chats that have unclassified messages waiting.
 export async function chatsWithUnclassified(): Promise<string[]> {
   const rows = await all<{ group_name: string }>(
@@ -503,8 +594,13 @@ export async function queryMessages(
   // "type:status|type:status" string we split back into an array below.
   const rows = await all<any>(
     `SELECT m.id, m.source, m.group_name, m.sender, m.message, m.timestamp,
-            m.is_incidental, m.store_only, m.trip_reference, m.reference_type,
-            string_agg(i.incidental_type || ':' || i.status, '|') AS inc_list
+            m.is_incidental, m.store_only, m.trip_reference, m.reference_type, m.image_count,
+            string_agg(i.incidental_type || ':' || i.status, '|') AS inc_list,
+            -- A scalar subquery, NOT another LEFT JOIN: joining a second one-to-many table would
+            -- multiply the rows and make string_agg above repeat every incidental once per photo.
+            (SELECT json_agg(json_build_object('sha', mi.sha256, 'seq', mi.seq, 'bytes', mi.bytes,
+                                               'width', mi.width, 'height', mi.height) ORDER BY mi.seq)
+               FROM incidentaliq.message_images mi WHERE mi.message_id = m.id) AS images
      FROM incidentaliq.captured_messages m
      LEFT JOIN incidentaliq.incidentals i ON i.message_id = m.id
      ${where}
@@ -514,14 +610,14 @@ export async function queryMessages(
   );
 
   return rows.map((r) => {
-    const { inc_list, ...rest } = r;
+    const { inc_list, images, ...rest } = r;
     const incidentals = inc_list
       ? String(inc_list).split("|").map((s) => {
           const [incidental_type, status] = s.split(":");
           return { incidental_type, status };
         })
       : [];
-    return { ...rest, incidentals };
+    return { ...rest, incidentals, images: images ?? [] };
   });
 }
 

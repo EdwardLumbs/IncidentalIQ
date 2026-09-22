@@ -16,8 +16,10 @@ import { initSchema } from "./schema.js";
 import {
   classifyBatch, CONTAINER_RE, PLATE_RE, normContainer, type BatchMessage,
 } from "./classifier.js";
+import { storeImage, openImage, dimensions, isSha } from "./images.js";
 import {
-  insertMessages, chatsWithUnclassified, unclassifiedFor, getSummary, getTrips,
+  insertMessages, saveImage, getImagePath, type ImageMeta,
+  chatsWithUnclassified, unclassifiedFor, getSummary, getTrips,
   saveSummary, saveChunkResults, batchUpsertTrips, queryIncidentals, queryIncidentalsByTrip,
   queryMessages, queryTrips, setSystemStatus, getSystemStatus, bumpMetrics,
   getTripLinks, upsertTripLinks, applyTripLinks, nowPh,
@@ -100,6 +102,66 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   if (AUTH_EXEMPT.has(req.path) || authorized(req)) return next();
   res.status(401).json({ ok: false, error: "unauthorized" });
 });
+
+// ⚠️ ORDER MATTERS. The photo upload is raw BINARY and must claim its body before the catch-all
+// text parser below, which is registered with `type: () => true` and would otherwise decode a JPEG
+// as UTF-8 text and corrupt it. Express runs middleware in registration order, so this route is
+// declared first, deliberately, not by accident of layout.
+//
+// The phone uploads ONE photo per request rather than a multipart album: each is independently
+// retryable, a failure costs one photo instead of seventeen, and the server stays streaming-simple.
+app.post("/images", express.raw({ type: () => true, limit: "12mb" }), asyncHandler(async (req: Request, res: Response) => {
+  const buf = Buffer.isBuffer(req.body) ? req.body : null;
+  if (!buf?.length) return res.status(400).json({ ok: false, error: "expected raw image bytes as the body" });
+
+  // Who/when/where rides in a header, because the body is the file. Everything the bubble needs is
+  // in here, so a photo is never waiting on the message batch to know where it belongs.
+  let meta: ImageMeta | null = null;
+  try {
+    meta = JSON.parse(req.header("x-image-meta") ?? "");
+  } catch { /* falls through to the 400 below */ }
+  if (!meta || typeof meta !== "object") {
+    return res.status(400).json({ ok: false, error: "missing or invalid X-Image-Meta header (JSON)" });
+  }
+  if (!meta.album_key || !String(meta.album_key).trim()) {
+    return res.status(400).json({ ok: false, error: "X-Image-Meta.album_key is required" });
+  }
+  if (!(meta.group_name ?? meta.chat ?? "").trim()) {
+    return res.status(400).json({ ok: false, error: "X-Image-Meta needs group_name (or chat)" });
+  }
+
+  const ts = meta.timestamp ?? meta.ts ?? null;
+  const stored = await storeImage(buf, ts);
+  const { width, height } = dimensions(buf);
+  const saved = await saveImage(meta, {
+    hash: stored.hash, path: stored.path, bytes: buf.length, width, height,
+  });
+  res.json({
+    ok: true, sha: stored.hash, duplicate: stored.duplicate,
+    message_id: saved.message_id, stored: saved.image_id != null,
+  });
+}));
+
+// Serve one stored photo. Token-protected like every other data route — the bytes are chat content.
+app.get("/images/:sha", asyncHandler(async (req: Request, res: Response) => {
+  const sha = String(req.params.sha ?? "").toLowerCase().replace(/\.jpg$/, "");
+  if (!isSha(sha)) return res.status(400).json({ ok: false, error: "bad image id" });
+  const rel = await getImagePath(sha);
+  if (!rel) return res.status(404).json({ ok: false, error: "not found" });
+  const file = await openImage(rel);
+  // Row present, file gone: the symptom of a container running WITHOUT its bind mount. Named in the
+  // log because the 404 alone sends you looking for a missing upload instead of a missing volume.
+  if (!file) {
+    console.error(`image row ${sha} points at ${rel}, which is not on disk — is IMAGE_DIR mounted?`);
+    return res.status(404).json({ ok: false, error: "image file missing" });
+  }
+  res.set("content-type", "image/jpeg");
+  res.set("content-length", String(file.size));
+  // The name IS the content hash, so this response can never go stale.
+  res.set("cache-control", "public, max-age=31536000, immutable");
+  file.stream.on("error", () => res.destroy());
+  file.stream.pipe(res);
+}));
 
 // Raw text body, parsed manually via parseJsonTolerant — only /messages carries a body.
 app.use(express.text({ type: () => true, limit: "5mb" }));
