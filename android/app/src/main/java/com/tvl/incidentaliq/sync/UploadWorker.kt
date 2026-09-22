@@ -46,6 +46,12 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
             return@withContext Result.success()
         }
 
+        // Photos first, and on their own error handling: a photo upload is one request per file and
+        // already retries itself next run, so a bad photo must not decide the fate of the text
+        // batch (or vice versa). Failures here are logged inside ImageUploader and never thrown.
+        try { ImageUploader.uploadPending(ctx) }
+        catch (e: Exception) { AppLog.write(TAG, "photo upload error: ${e.message}") }
+
         var totalSent = 0
         // Drain in bounded passes; stop when the buffer is empty or we hit the per-run pass cap.
         repeat(MAX_POSTS) {

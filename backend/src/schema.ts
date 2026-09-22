@@ -129,6 +129,10 @@ const STATEMENTS: string[] = [
   // How many photos the phone SAW in the bubble, which is not always how many it has managed to
   // upload yet. Keeping the expectation lets the panel say "2 of 4" instead of quietly showing two.
   `ALTER TABLE incidentaliq.captured_messages ADD COLUMN IF NOT EXISTS image_count integer`,
+  // Where this bubble's photos live on disk, relative to IMAGE_DIR — one folder per bubble, named
+  // so a person browsing the drive can find it (date/chat/time_sender_Nphotos). Stored rather than
+  // recomputed because the name embeds the photo COUNT, which can grow after the folder exists.
+  `ALTER TABLE incidentaliq.captured_messages ADD COLUMN IF NOT EXISTS album_dir text`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_msg_album_key ON incidentaliq.captured_messages (album_key) WHERE album_key IS NOT NULL`,
   `CREATE INDEX IF NOT EXISTS idx_images_message ON incidentaliq.message_images (message_id)`,
 

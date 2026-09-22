@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- canPerformGestures is what allows dispatchGesture(), and photo capture cannot work without it:
+     Messenger's album tiles are long-clickable only, so the ONLY way to open one is a synthetic tap
+     at its coordinates. Without the flag the call is refused silently — dispatchGesture returns
+     false, nothing happens, and the viewer "just never opens" with no error anywhere. Single photos
+     kept working the whole time because their node is genuinely clickable and takes ACTION_CLICK,
+     which hid the problem until an album was tried (2026-09-22). -->
+
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:accessibilityFlags="flagDefault|flagIncludeNotImportantViews|flagReportViewIds"
     android:canRetrieveWindowContent="true"
+    android:canPerformGestures="true"
     android:description="@string/accessibility_description"
     android:notificationTimeout="100"
     android:packageNames="com.viber.voip,com.facebook.orca" />
+

@@ -206,6 +206,15 @@
 
     </LinearLayout>
 
+    <!-- Photo capture needs two grants Android will not give silently: media read, and the
+         All-files toggle that lets us delete a saved photo once the server has it. -->
+    <Button
+        android:id="@+id/btnPhotoAccess"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="4dp"
+        android:text="PHOTO ACCESS" />
+
     <Button
         android:id="@+id/btnSaveGroups"
         android:layout_width="match_parent"

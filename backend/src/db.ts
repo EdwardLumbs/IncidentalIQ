@@ -8,6 +8,7 @@
 // and no invocation-scoped subrequest count at all, so a batch is just one query.
 import type { BatchResult, TripRef } from "./classifier.js";
 import { contentHash } from "./classifier.js";
+import { albumDir, renameAlbumDir } from "./album.js";
 import { all, get, run, tx } from "./pg.js";
 
 // A message row as uploaded by the phone (matches captured_messages.jsonl on the device).
@@ -179,14 +180,15 @@ export interface ImageMeta {
 const albumLabel = (n: number) => (n > 1 ? `[${n} photos]` : "[photo]");
 
 /**
- * Find (or create) the captured_messages row for an album, then record one photo against it.
- * Idempotent on BOTH halves: re-uploading photo 2 of 4 after a crash neither duplicates the bubble
- * (unique album_key) nor the photo (unique message_id+sha256).
+ * Find (or create) the bubble row for an album and hand back the folder its photos belong in.
+ *
+ * Called BEFORE the file is written, because the path depends on the bubble: date, chat, time,
+ * sender and count all come from the row, and the row is the thing that has to be agreed on first
+ * when photos arrive one request at a time.
+ *
+ * Idempotent — re-uploading photo 2 of 4 after a crash finds the same row and the same folder.
  */
-export async function saveImage(
-  meta: ImageMeta,
-  img: { hash: string; path: string; bytes: number; width: number | null; height: number | null },
-): Promise<{ message_id: number; image_id: number | null }> {
+export async function upsertAlbum(meta: ImageMeta): Promise<{ message_id: number; dir: string; count: number }> {
   const source = normalizeSource(meta.source);
   const group = (meta.group_name ?? meta.chat ?? "").trim();
   const ts = toPh(meta.timestamp ?? meta.ts);
@@ -195,6 +197,7 @@ export async function saveImage(
   const now = nowPh();
   const message = albumLabel(count);
   const hash = await contentHash(source, group, `${message}|${meta.album_key}`);
+  const wantDir = albumDir({ group_name: group, sender: meta.sender, timestamp: ts }, count);
 
   return tx(async (t) => {
     // classified_at is stamped at creation ON PURPOSE: "[4 photos]" carries no text for Groq to
@@ -203,38 +206,95 @@ export async function saveImage(
     await t.run(
       `INSERT INTO incidentaliq.captured_messages
         (source, group_name, sender, message, timestamp, raw_notif, content_hash, synced_at,
-         store_only, album_key, image_count, classified_at)
-       VALUES ($1,$2,$3,$4,$5,0,$6,$7,$8,$9,$10,$7)
+         store_only, album_key, image_count, album_dir, classified_at)
+       VALUES ($1,$2,$3,$4,$5,0,$6,$7,$8,$9,$10,$11,$7)
        -- The index is PARTIAL (album_key IS NOT NULL, so text messages don't all collide on NULL),
        -- and Postgres only infers a partial index when the predicate is repeated here.
        ON CONFLICT (album_key) WHERE album_key IS NOT NULL DO NOTHING`,
       [source, group, meta.sender ?? null, message, ts, hash, now, meta.store_only ? 1 : 0,
-       meta.album_key, count],
+       meta.album_key, count, wantDir],
     );
-    const row = await t.get<{ id: number; image_count: number | null }>(
-      "SELECT id, image_count FROM incidentaliq.captured_messages WHERE album_key = $1",
+    const row = await t.get<{ id: number; image_count: number | null; album_dir: string | null }>(
+      "SELECT id, image_count, album_dir FROM incidentaliq.captured_messages WHERE album_key = $1",
       [meta.album_key],
     );
     if (!row) throw new Error("album row missing right after upsert");
 
+    let dir = row.album_dir ?? wantDir;
+    const known = row.image_count ?? 0;
+    const grown = Math.max(known, count, seq);
+
     // A later photo can reveal the bubble held more than the first upload claimed (the phone counts
-    // what it can see, and a tall album needs scrolling). Grow the expectation, never shrink it.
-    if (count > (row.image_count ?? 0) || seq > (row.image_count ?? 0)) {
+    // the tiles it can SEE, and a tall album needs scrolling). The count is part of the folder name,
+    // so growing it means moving the folder — otherwise "…_8photos" ends up holding nine files,
+    // exactly the confusion this layout exists to prevent.
+    if (grown > known) {
+      const newDir = albumDir({ group_name: group, sender: meta.sender, timestamp: ts }, grown);
+      if (newDir !== dir) dir = await renameAlbumDir(dir, newDir);
       await t.run(
-        "UPDATE incidentaliq.captured_messages SET image_count = GREATEST(COALESCE(image_count,0), $2, $3) WHERE id = $1",
-        [row.id, count, seq],
+        "UPDATE incidentaliq.captured_messages SET image_count = $2, message = $3, album_dir = $4 WHERE id = $1",
+        [row.id, grown, albumLabel(grown), dir],
+      );
+      // Photos already recorded live under the old folder name; point them at the new one.
+      await t.run(
+        // Keep each file's own name, swap the folder in front of it. The rename above moved the
+        // files; this is only the rows catching up.
+        `UPDATE incidentaliq.message_images
+            SET path = $2 || regexp_replace(path, '^.*/', '')
+          WHERE message_id = $1`,
+        [row.id, dir + "/"],
       );
     }
-
-    const ins = await t.get<{ id: number }>(
-      `INSERT INTO incidentaliq.message_images (message_id, seq, sha256, path, bytes, width, height, received_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-       ON CONFLICT (message_id, sha256) DO NOTHING
-       RETURNING id`,
-      [row.id, seq, img.hash, img.path, img.bytes, img.width, img.height, now],
-    );
-    return { message_id: row.id, image_id: ins?.id ?? null };
+    return { message_id: row.id, dir, count: grown };
   });
+}
+
+/**
+ * Is this exact photo already recorded against this bubble? Returns its stored path if so.
+ *
+ * The caller checks BEFORE writing anything, because the same bytes can arrive twice under
+ * different seq numbers (a retry the phone numbered differently, or a sender who posted the same
+ * picture twice in one bubble). Writing it again would leave a second file on disk while the row
+ * pointed at only one of them — an orphan the PDF then skips, so the document quietly loses a page.
+ */
+export async function findImage(messageId: number, hash: string): Promise<string | null> {
+  const row = await get<{ path: string }>(
+    "SELECT path FROM incidentaliq.message_images WHERE message_id = $1 AND sha256 = $2",
+    [messageId, hash],
+  );
+  return row?.path ?? null;
+}
+
+/** Record one photo against its bubble. Re-recording the same file changes nothing. */
+export async function recordImage(
+  messageId: number,
+  img: { seq: number; hash: string; path: string; bytes: number; width: number | null; height: number | null },
+): Promise<boolean> {
+  const ins = await get<{ id: number }>(
+    `INSERT INTO incidentaliq.message_images (message_id, seq, sha256, path, bytes, width, height, received_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT (message_id, sha256) DO NOTHING
+     RETURNING id`,
+    [messageId, img.seq, img.hash, img.path, img.bytes, img.width, img.height, nowPh()],
+  );
+  return ins != null;
+}
+
+/** A bubble's photos in send order — what the PDF is built from. */
+export async function albumPhotos(messageId: number): Promise<{ seq: number; path: string }[]> {
+  return all<{ seq: number; path: string }>(
+    "SELECT seq, path FROM incidentaliq.message_images WHERE message_id = $1 ORDER BY seq ASC, id ASC",
+    [messageId],
+  );
+}
+
+/** A bubble's folder, for serving its PDF. */
+export async function getAlbumDir(messageId: number): Promise<string | null> {
+  const row = await get<{ album_dir: string | null }>(
+    "SELECT album_dir FROM incidentaliq.captured_messages WHERE id = $1",
+    [messageId],
+  );
+  return row?.album_dir ?? null;
 }
 
 // Where a stored photo lives, for GET /images/:sha. A hash can belong to several chats (same photo
@@ -594,7 +654,7 @@ export async function queryMessages(
   // "type:status|type:status" string we split back into an array below.
   const rows = await all<any>(
     `SELECT m.id, m.source, m.group_name, m.sender, m.message, m.timestamp,
-            m.is_incidental, m.store_only, m.trip_reference, m.reference_type, m.image_count,
+            m.is_incidental, m.store_only, m.trip_reference, m.reference_type, m.image_count, m.album_dir,
             string_agg(i.incidental_type || ':' || i.status, '|') AS inc_list,
             -- A scalar subquery, NOT another LEFT JOIN: joining a second one-to-many table would
             -- multiply the rows and make string_agg above repeat every incidental once per photo.

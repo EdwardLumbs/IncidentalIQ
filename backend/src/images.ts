@@ -2,12 +2,8 @@
 // db.ts stores a relative path, index.ts streams whatever this hands back. Same "one file owns the
 // host resource" rule pg.ts follows for Postgres.
 //
-// Layout: <IMAGE_DIR>/<yyyy-mm>/<sha256>.jpg
-//   - The FILENAME IS THE CONTENT HASH, so the same photo forwarded into two chats is stored once
-//     while each chat keeps its own row. It also makes re-upload after a phone crash a no-op: the
-//     file is already there, byte-identical, and writing it again changes nothing.
-//   - The month folder exists so one directory never accumulates years of files (some filesystems
-//     and every `ls` get unpleasant past a few tens of thousands of entries).
+// Layout: one folder per chat bubble — see album.ts, which decides the names. This file only reads
+// and writes whatever path it is handed.
 //
 // ⚠️ IMAGE_DIR must be a BIND-MOUNTED host directory in production, not a path inside the image.
 // The database row holds only the path; an unmounted container writes into its own writable layer
@@ -30,19 +26,6 @@ export const sha256 = (buf: Buffer): string => createHash("sha256").update(buf).
 // string — is rejected before it reaches a path, so a crafted GET can't read outside IMAGE_DIR.
 export const isSha = (s: string): boolean => /^[0-9a-f]{64}$/.test(s);
 
-// The month folder a photo captured at PH-time `ts` belongs in. Falls back to the current month when
-// the phone sends something unparseable, because a photo in the wrong folder is a filing detail while
-// a crash here would lose it.
-function monthOf(ts?: string | null): string {
-  const m = /^(\d{4})-(\d{2})/.exec(String(ts ?? ""));
-  if (m) return `${m[1]}-${m[2]}`;
-  const d = new Date(Date.now() + 8 * 3600_000); // PH wall clock
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
-// The stored path for a photo, RELATIVE to IMAGE_DIR — that is what goes in the database, so moving
-// the whole store to another disk is a compose edit and nothing else.
-export const relPathFor = (hash: string, ts?: string | null): string => `${monthOf(ts)}/${hash}.jpg`;
 
 // Absolute path for a stored relative path, refusing anything that escapes IMAGE_DIR even if a bad
 // row somehow holds "../". Defence in depth behind isSha(), not instead of it.
@@ -54,23 +37,24 @@ export function absPathFor(rel: string): string {
 }
 
 /**
- * Write the bytes, unless that exact file is already on disk. Returns the relative path and whether
- * it was a duplicate. Never throws on "already exists" — that is the normal, expected case when the
- * phone re-uploads after dying mid-album.
+ * Write the bytes at `rel` (a path relative to IMAGE_DIR), creating the folder as needed. Returns
+ * the content hash and whether that exact file was already there — which is the normal case when the
+ * phone re-uploads after dying mid-album, and is never an error.
  */
-export async function storeImage(
-  buf: Buffer, ts?: string | null,
+export async function storeImageAt(
+  buf: Buffer, rel: string,
 ): Promise<{ hash: string; path: string; duplicate: boolean }> {
   const hash = sha256(buf);
-  const path = relPathFor(hash, ts);
-  const abs = absPathFor(path);
+  const abs = absPathFor(rel);
   try {
-    await stat(abs);
-    return { hash, path, duplicate: true }; // byte-identical by construction — nothing to rewrite
+    const info = await stat(abs);
+    // Same path AND same size: already written. Size alone is a weak check, but the name carries
+    // the hash prefix and the caller derived the name from this very buffer.
+    if (info.size === buf.length) return { hash, path: rel, duplicate: true };
   } catch { /* not there yet → write it */ }
   await mkdir(dirname(abs), { recursive: true });
   await writeFile(abs, buf);
-  return { hash, path, duplicate: false };
+  return { hash, path: rel, duplicate: false };
 }
 
 // Open a stored photo for streaming. Returns null when the row points at a file that is no longer on

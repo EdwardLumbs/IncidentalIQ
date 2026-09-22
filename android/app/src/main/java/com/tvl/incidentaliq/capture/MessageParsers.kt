@@ -40,10 +40,10 @@ object ViberParser {
                         out.add(CapturedMessage("VIBER", chat, sender, t, false, viaAccessibility = true))
                     }
                 }
-                "imageView", "preview" -> {
-                    val sender = currentSender.ifBlank { chat }
-                    out.add(CapturedMessage("VIBER", chat, sender, "[image]", true, viaAccessibility = true))
-                }
+                // Photos are NOT emitted as "[image]" text any more. ImageSaver captures the
+                // actual file and the backend creates the bubble row from the upload, so a
+                // placeholder here would produce a SECOND, empty row for the same photo. When a
+                // save genuinely fails, ImageSaver writes its own "[photo — not saved]" message.
             }
         }
         return out
@@ -84,11 +84,10 @@ object MessengerParser {
                     if (content.isNotBlank())
                         out.add(CapturedMessage("MESSENGER", chat, sender, content, false, viaAccessibility = true))
                 }
-            } else if (cd.startsWith("Forward photo sent by")) {
-                // "Forward photo sent by Ancel Remo on 9:47 PM"
-                val sender = cd.removePrefix("Forward photo sent by ").substringBefore(" on ").trim()
-                out.add(CapturedMessage("MESSENGER", chat, sender, "[image]", true, viaAccessibility = true))
             }
+            // The "Forward photo sent by <name> on <time>" node is no longer turned into an
+            // "[image]" message here — it is the ATTRIBUTION MessengerImageParser reads to identify
+            // a photo bubble, and the photo itself is captured as a file. See ImageBubbles.kt.
         }
         // The same bubble appears multiple times in the obfuscated tree → dedupe.
         return out.distinctBy { it.sender + "|" + it.content }

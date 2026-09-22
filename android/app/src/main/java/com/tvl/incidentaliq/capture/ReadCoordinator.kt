@@ -9,8 +9,10 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import com.tvl.incidentaliq.core.AppLog
+import com.tvl.incidentaliq.core.ImagePermissions
 import com.tvl.incidentaliq.core.WakeLockHelper
 import com.tvl.incidentaliq.data.CapturedMessage
+import com.tvl.incidentaliq.data.ImageQueue
 import com.tvl.incidentaliq.data.MessageStore
 import com.tvl.incidentaliq.sync.Uploader
 
@@ -154,7 +156,29 @@ object ReadCoordinator {
             Thread.sleep(RESCAN_MS)
         }
         AppLog.write(TAG, "captured $totalNew new message(s) from \"${task.chatHint}\"")
-        if (totalNew > 0 && task.immediate) {
+
+        // PHASE 2.5 — PHOTOS. Deliberately AFTER the text settle and BEFORE closing: text is cheap
+        // and must never be held up behind a 17-photo album, and the final scan below re-reads the
+        // chat once the tapping is done, so anything that arrived while we were in the photo viewer
+        // is still picked up on the way out.
+        //
+        // Every photo costs a couple of seconds of tapping, so the work is skipped entirely for
+        // bubbles this phone has already saved (ImageQueue.wasSeen) — a chat gets re-opened on
+        // every truncated message, and its photos are still sitting there each time.
+        val photos = capturePhotos(ctx, svc, task.pkg, task.storeOnly)
+
+        // Re-read after the photo phase: no notification fires for the chat that is on screen, so
+        // whatever landed during those taps is only visible by looking again.
+        if (photos > 0) {
+            svc.readActiveChat()?.second?.forEach { raw ->
+                val m = if (task.storeOnly) raw.copy(storeOnly = true) else raw
+                if (MessageStore.save(ctx, m)) {
+                    totalNew++
+                    AppLog.write(TAG, "✅ (post-photos) [${m.source}] ${m.sender}: ${m.content.take(140)}")
+                }
+            }
+        }
+        if ((totalNew > 0 || photos > 0) && task.immediate) {
             AppLog.write(TAG, "immediate group — syncing now")
             Uploader.syncNow(ctx)
         }
@@ -164,6 +188,86 @@ object ReadCoordinator {
         svc.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
         WakeLockHelper.release()
         AppLog.write(TAG, "────── READ END ──────")
+    }
+
+    /**
+     * Save every photo bubble on screen that this phone hasn't already handled. Returns how many
+     * photos were queued for upload.
+     *
+     * A bubble is marked seen even when it yields nothing, so a photo the apps refuse to save
+     * (deleted by the sender, expired, a video we can't handle) is attempted ONCE rather than
+     * re-attempted on every future read of that chat — which would burn the cycle forever on a
+     * bubble that will never work.
+     */
+    /**
+     * Run the photo phase against whatever chat is on screen RIGHT NOW, outside a read cycle.
+     * The in-app trigger (long-press Dump Tree) for checking the save path on a real chat without
+     * waiting for a notification to arrive — the photo equivalent of dumpTree().
+     */
+    fun capturePhotosOnScreen(ctx: Context): Int {
+        val svc = UITreeAccessibilityService.instance ?: run {
+            AppLog.write(TAG, "photo test: accessibility service not running")
+            return 0
+        }
+        val pkg = svc.foregroundPackage() ?: run {
+            AppLog.write(TAG, "photo test: nothing readable on screen")
+            return 0
+        }
+        if (pkg != "com.viber.voip" && pkg != "com.facebook.orca") {
+            AppLog.write(TAG, "photo test: open a Viber or Messenger chat first (on screen: $pkg)")
+            return 0
+        }
+        AppLog.write(TAG, "────── PHOTO TEST on $pkg ──────")
+        WakeLockHelper.acquire(ctx)
+        return try {
+            capturePhotos(ctx, svc, pkg, storeOnly = false)
+        } finally {
+            WakeLockHelper.release()
+            AppLog.write(TAG, "────── PHOTO TEST END ──────")
+        }
+    }
+
+    private fun capturePhotos(ctx: Context, svc: UITreeAccessibilityService, pkg: String, storeOnly: Boolean): Int {
+        if (!ImagePermissions.canRead(ctx)) return 0   // status is reported in the app, not per-read
+        val bubbles = try {
+            svc.readImageBubbles()
+        } catch (e: Exception) {
+            AppLog.write(TAG, "photo scan failed: ${e.message}")
+            return 0
+        }
+        val todo = bubbles.filter { !ImageQueue.wasSeen(ctx, it.albumKey()) }
+        if (todo.isEmpty()) {
+            if (bubbles.isNotEmpty()) AppLog.write(TAG, "${bubbles.size} photo bubble(s) on screen, all already saved")
+            return 0
+        }
+        AppLog.write(TAG, "${todo.size} new photo bubble(s) to save")
+
+        // ⚠️ ONE BUBBLE PER TREE READ. The node inside an ImageBubble is a live handle into the
+        // window that produced it, and saving a bubble leaves the chat for a media viewer and comes
+        // back — which invalidates every node captured before that trip. Reusing them taps at
+        // coordinates the list has since scrolled away from, and the viewer simply never opens
+        // (seen on the device 2026-09-22: photo 1 fine, the 8-photo album right after it dead).
+        //
+        // So the loop works off album KEYS, which survive anything, and re-finds each bubble in a
+        // freshly-read tree right before touching it.
+        var saved = 0
+        for (key in todo.map { it.albumKey() }) {
+            val current = try { svc.readImageBubbles() } catch (_: Exception) { emptyList() }
+            val b = current.firstOrNull { it.albumKey() == key }
+            if (b == null) {
+                // Scrolled out of view while we worked on an earlier bubble. Leave it UNSEEN so the
+                // next read of this chat picks it up, rather than marking it done for good.
+                AppLog.write(TAG, "photo bubble no longer on screen — leaving it for the next read")
+                continue
+            }
+            try {
+                saved += ImageSaver.saveBubble(ctx, svc, pkg, b, storeOnly)
+            } catch (e: Exception) {
+                AppLog.write(TAG, "photo save error: ${e.message}")
+            }
+            ImageQueue.markSeen(ctx, key)
+        }
+        return saved
     }
 
     /** Open the exact chat. Prefer the notification's contentIntent (lands directly in it). */

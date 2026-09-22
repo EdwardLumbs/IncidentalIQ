@@ -22,9 +22,20 @@ class NotificationListener : NotificationListenerService() {
             "(no title)", "(name removed)", "Chat backup"
         )
         // Notification previews that mean "image/media" → must read via accessibility.
+        //
+        // Matched through mediaPreview() below rather than by equality, because the apps are not
+        // consistent about the trailing full stop: Messenger posts "Sent a photo." in some chats and
+        // "Sent a photo" in others. An exact-match miss is silent and expensive — the notification is
+        // stored as if its text WERE the message, so the chat keeps a useless "Sent a photo." row and
+        // the actual photo is never fetched (seen live 2026-09-22).
         private val MEDIA_PREVIEWS = setOf(
-            "", "Sent a photo", "Sent a video", "Photo", "Video", "Sent a sticker", "Sent an attachment"
+            "", "sent a photo", "sent a video", "photo", "video", "sent a sticker", "sent an attachment",
+            "sent an image", "sent a file", "sent a gif"
         )
+
+        /** True when a notification's text is one of the media placeholders, punctuation aside. */
+        fun mediaPreview(content: String): Boolean =
+            content.trim().trimEnd('.', '!', '…').lowercase() in MEDIA_PREVIEWS
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -58,7 +69,7 @@ class NotificationListener : NotificationListenerService() {
 
         val app = if (sbn.packageName == "com.viber.voip") "VIBER" else "MESSENGER"
         val truncated = content.length >= 95
-        val imageLike = content in MEDIA_PREVIEWS
+        val imageLike = mediaPreview(content)
 
         // Noise filters (only to decide whether to act — everything is still logged).
         val isOngoing = (n.flags and Notification.FLAG_ONGOING_EVENT) != 0

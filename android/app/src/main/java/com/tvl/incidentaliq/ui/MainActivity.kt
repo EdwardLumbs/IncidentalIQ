@@ -6,11 +6,14 @@ import android.provider.Settings
 import android.widget.ScrollView
 import androidx.appcompat.app.AppCompatActivity
 import com.tvl.incidentaliq.capture.MonitorForegroundService
+import com.tvl.incidentaliq.capture.ReadCoordinator
 import com.tvl.incidentaliq.capture.UITreeAccessibilityService
 import com.tvl.incidentaliq.core.Config
+import com.tvl.incidentaliq.core.ImagePermissions
 import com.tvl.incidentaliq.core.LogBus
 import com.tvl.incidentaliq.core.Monitoring
 import com.tvl.incidentaliq.core.WakeLockHelper
+import com.tvl.incidentaliq.data.ImageQueue
 import com.tvl.incidentaliq.data.MessageStore
 import com.tvl.incidentaliq.databinding.ActivityMainBinding
 import com.tvl.incidentaliq.sync.Uploader
@@ -96,6 +99,20 @@ class MainActivity : AppCompatActivity() {
             log("Saved — classify V:$v M:$m | store-only V:$sv M:$sm | immediate V:$iv M:$im")
         }
 
+        // Photo capture grants. Media read is a normal runtime permission; "All files access" is a
+        // Settings toggle only — no app can request it inline — so this button walks both in turn.
+        binding.btnPhotoAccess.setOnClickListener {
+            if (!ImagePermissions.canRead(this)) {
+                log("Requesting photo access…")
+                requestPermissions(arrayOf(ImagePermissions.readPermission()), REQ_PHOTOS)
+            } else if (!ImagePermissions.canDelete(this)) {
+                log("Opening All files access — turn it ON so saved photos can be cleaned up")
+                startActivity(ImagePermissions.allFilesSettingsIntent(this))
+            } else {
+                log(ImagePermissions.status(this))
+            }
+        }
+
         binding.btnDumpTree.setOnClickListener {
             val svc = UITreeAccessibilityService.instance
             if (svc == null) {
@@ -105,6 +122,22 @@ class MainActivity : AppCompatActivity() {
                 svc.dumpTree()
                 log("Dump triggered — check logcat for TREE tag")
             }
+        }
+
+        // LONG-press Dump Tree = save the photos in the chat currently on screen. Same spirit as the
+        // short press (a dev probe against a real chat), but it drives the save path end to end
+        // instead of just reading the tree. Off the main thread: it taps, waits and polls for files.
+        binding.btnDumpTree.setOnLongClickListener {
+            // The capture reads whatever app is in FRONT, and pressing a button here puts US in
+            // front — so the run is delayed to leave time to switch to the chat. In the real flow
+            // the read cycle opens the chat itself and no delay is needed.
+            log("Photo test — switch to the chat now, starting in ${PHOTO_TEST_DELAY_MS / 1000}s…")
+            Thread {
+                Thread.sleep(PHOTO_TEST_DELAY_MS)
+                val n = ReadCoordinator.capturePhotosOnScreen(this)
+                runOnUiThread { log("Photo test done — $n photo(s) queued. Tap SYNC NOW to upload.") }
+            }.start()
+            true
         }
 
         LogBus.listener = { msg -> runOnUiThread { log(msg) } }
@@ -130,6 +163,21 @@ class MainActivity : AppCompatActivity() {
         } else {
             log("OK: Accessibility service enabled")
         }
+        log(ImagePermissions.status(this))
+        val queued = ImageQueue.pendingCount(this)
+        if (queued > 0) log("$queued photo(s) waiting to upload")
+    }
+
+    // The media-read grant is the one that decides whether photo capture runs at all, so the result
+    // leads straight into the All-files step rather than leaving it half-configured.
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQ_PHOTOS) return
+        log(ImagePermissions.status(this))
+        if (ImagePermissions.canRead(this) && !ImagePermissions.canDelete(this)) {
+            log("Now turn ON All files access so saved photos can be deleted after upload")
+            startActivity(ImagePermissions.allFilesSettingsIntent(this))
+        }
     }
 
     private fun log(msg: String) {
@@ -147,6 +195,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val REQ_PHOTOS = 101
+        private const val PHOTO_TEST_DELAY_MS = 8_000L  // long enough to switch apps by hand
         private const val MAX_UI_LINES = 500   // trim the on-screen log once it passes this
         private const val KEEP_UI_LINES = 300  // …down to this many most-recent lines
     }

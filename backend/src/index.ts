@@ -16,9 +16,10 @@ import { initSchema } from "./schema.js";
 import {
   classifyBatch, CONTAINER_RE, PLATE_RE, normContainer, type BatchMessage,
 } from "./classifier.js";
-import { storeImage, openImage, dimensions, isSha } from "./images.js";
+import { storeImageAt, openImage, dimensions, isSha, sha256 } from "./images.js";
+import { photoName, buildAlbumPdf, PDF_NAME } from "./album.js";
 import {
-  insertMessages, saveImage, getImagePath, type ImageMeta,
+  insertMessages, upsertAlbum, recordImage, findImage, albumPhotos, getImagePath, getAlbumDir, type ImageMeta,
   chatsWithUnclassified, unclassifiedFor, getSummary, getTrips,
   saveSummary, saveChunkResults, batchUpsertTrips, queryIncidentals, queryIncidentalsByTrip,
   queryMessages, queryTrips, setSystemStatus, getSystemStatus, bumpMetrics,
@@ -130,16 +131,52 @@ app.post("/images", express.raw({ type: () => true, limit: "12mb" }), asyncHandl
     return res.status(400).json({ ok: false, error: "X-Image-Meta needs group_name (or chat)" });
   }
 
-  const ts = meta.timestamp ?? meta.ts ?? null;
-  const stored = await storeImage(buf, ts);
+  // The bubble decides the folder, so the row comes first and the bytes follow it.
+  const album = await upsertAlbum(meta);
+  const seq = Math.max(1, Number(meta.seq) || 1);
   const { width, height } = dimensions(buf);
-  const saved = await saveImage(meta, {
-    hash: stored.hash, path: stored.path, bytes: buf.length, width, height,
+  const hash = sha256(buf);
+
+  // Already held for this bubble? Then this is a retry (or the same picture posted twice in one
+  // bubble) — answer with what we have rather than writing a second copy under a different seq.
+  const existing = await findImage(album.message_id, hash);
+  if (existing) {
+    return res.json({
+      ok: true, sha: hash, duplicate: true,
+      message_id: album.message_id, dir: album.dir, path: existing,
+    });
+  }
+
+  const rel = `${album.dir}/${photoName(seq, hash)}`;
+  const stored = await storeImageAt(buf, rel);
+  await recordImage(album.message_id, {
+    seq, hash: stored.hash, path: stored.path, bytes: buf.length, width, height,
   });
+
+  // Rebuild the bubble's PDF on EVERY upload, not once the album "looks complete" — nothing here
+  // knows when the last photo has arrived, and a retry hours later must still end up in the document.
+  const photos = await albumPhotos(album.message_id);
+  const pdf = await buildAlbumPdf(album.dir, photos.map((p) => p.path.split("/").pop() as string));
+
   res.json({
     ok: true, sha: stored.hash, duplicate: stored.duplicate,
-    message_id: saved.message_id, stored: saved.image_id != null,
+    message_id: album.message_id, dir: album.dir, photos: photos.length, pdf,
   });
+}));
+
+// The bubble's PDF — every photo in that chat message, one page each, in the order they were sent.
+app.get("/albums/:id/pdf", asyncHandler(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ ok: false, error: "bad album id" });
+  const dir = await getAlbumDir(id);
+  if (!dir) return res.status(404).json({ ok: false, error: "not found" });
+  const file = await openImage(`${dir}/${PDF_NAME}`);
+  if (!file) return res.status(404).json({ ok: false, error: "no pdf for this album yet" });
+  res.set("content-type", "application/pdf");
+  res.set("content-length", String(file.size));
+  res.set("content-disposition", `inline; filename="${dir.split("/").pop()}.pdf"`);
+  file.stream.on("error", () => res.destroy());
+  file.stream.pipe(res);
 }));
 
 // Serve one stored photo. Token-protected like every other data route — the bytes are chat content.

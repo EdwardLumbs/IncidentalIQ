@@ -1,10 +1,12 @@
 package com.tvl.incidentaliq.capture
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Path
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -91,6 +93,103 @@ class UITreeAccessibilityService : AccessibilityService() {
             }
         }
         AppLog.write(TAG, "scrollToBottom: hit MAX_SCROLLS ($MAX_SCROLLS) cap — read may miss oldest backlog")
+    }
+
+    /** Photo bubbles in the chat currently on screen. Empty for anything that isn't a chat. */
+    fun readImageBubbles(): List<ImageBubble> {
+        val root = rootInActiveWindow ?: return emptyList()
+        return when (root.packageName?.toString()) {
+            "com.viber.voip" -> ViberImageParser.parse(root, ViberParser.chatTitle(root) ?: "?")
+            "com.facebook.orca" -> MessengerImageParser.parse(root, MessengerParser.chatTitle(root) ?: "?")
+            else -> emptyList()
+        }
+    }
+
+    // ── Driving the UI (the photo-capture path) ───────────────────────────────────────────────
+    // Reading a chat needs no interaction; saving a PHOTO does — neither app exposes the file, so
+    // the only way to it is their own viewer. Everything below exists for ImageSaver.
+
+    /** Every node currently on screen whose content-desc equals [cd]. */
+    fun findByDesc(cd: String): List<AccessibilityNodeInfo> {
+        val out = ArrayList<AccessibilityNodeInfo>()
+        walkAll(rootInActiveWindow) { if (it.contentDescription?.toString() == cd) out.add(it) }
+        return out
+    }
+
+    /** True when any node on screen carries this view id (Viber's readable ids). */
+    fun hasViewId(id: String): Boolean {
+        var found = false
+        walkAll(rootInActiveWindow) {
+            if (!found && it.viewIdResourceName?.substringAfterLast('/') == id) found = true
+        }
+        return found
+    }
+
+    /** First node on screen with this view id, or null. */
+    fun findByViewId(id: String): AccessibilityNodeInfo? {
+        var hit: AccessibilityNodeInfo? = null
+        walkAll(rootInActiveWindow) {
+            if (hit == null && it.viewIdResourceName?.substringAfterLast('/') == id) hit = it
+        }
+        return hit
+    }
+
+    private fun walkAll(node: AccessibilityNodeInfo?, action: (AccessibilityNodeInfo) -> Unit) {
+        node ?: return
+        action(node)
+        for (i in 0 until node.childCount) walkAll(node.getChild(i), action)
+    }
+
+    /**
+     * Click a node: ACTION_CLICK when the node itself is clickable, otherwise a real tap gesture at
+     * its centre — the same thing `adb shell input tap` does, and what actually opens Messenger's
+     * media viewer.
+     *
+     * ⚠️ It deliberately does NOT climb to a clickable ANCESTOR when the node isn't clickable.
+     * Messenger's album tiles are long-clickable only, and their container ViewGroup accepts
+     * ACTION_CLICK and returns TRUE while doing nothing at all — so an ancestor walk reports success,
+     * skips the gesture, and the viewer never opens. Cost the 8-photo album two silent failures on
+     * the device before the cause was obvious (2026-09-22).
+     */
+    fun tap(node: AccessibilityNodeInfo?): Boolean {
+        node ?: return false
+        if (node.isClickable && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return true
+        val r = Rect().also { node.getBoundsInScreen(it) }
+        if (r.isEmpty) return false
+        return tapAt(r.centerX(), r.centerY())
+    }
+
+    /** Raw tap at screen coordinates — the same thing `adb shell input tap` does. */
+    fun tapAt(x: Int, y: Int): Boolean {
+        val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
+        val stroke = GestureDescription.StrokeDescription(path, 0, 60)
+        return dispatchGesture(GestureDescription.Builder().addStroke(stroke).build(), null, null)
+    }
+
+    /**
+     * Advance to the next photo in an album: right-to-left swipe across the middle of the screen.
+     * Preferred over ACTION_SCROLL_FORWARD because Viber's viewer exposes no scrollable node at all;
+     * Messenger's ViewPager is scrollable but responds to the gesture just the same.
+     */
+    fun swipeNext(): Boolean {
+        val w = resources.displayMetrics.widthPixels
+        val h = resources.displayMetrics.heightPixels
+        val y = (h * 0.45f)
+        val path = Path().apply {
+            moveTo(w * 0.85f, y)
+            lineTo(w * 0.15f, y)
+        }
+        val stroke = GestureDescription.StrokeDescription(path, 0, 250)
+        return dispatchGesture(GestureDescription.Builder().addStroke(stroke).build(), null, null)
+    }
+
+    /** True when the CHAT is on screen (as opposed to a media viewer opened on top of it). */
+    fun inChat(pkg: String): Boolean = when (pkg) {
+        "com.viber.voip" -> hasViewId("conversation_recycler_view")
+        // Messenger's viewer keeps a composer visible, so the composer can't be the signal — the
+        // Save button can: it exists only in the viewer.
+        "com.facebook.orca" -> findByDesc("Save").isEmpty() && findByDesc("Thread details").isNotEmpty()
+        else -> true
     }
 
     /** Fingerprint of the currently-visible messages, so we can tell when a scroll stopped moving. */
