@@ -33,9 +33,24 @@ class NotificationListener : NotificationListenerService() {
             "sent an image", "sent a file", "sent a gif"
         )
 
-        /** True when a notification's text is one of the media placeholders, punctuation aside. */
-        fun mediaPreview(content: String): Boolean =
-            content.trim().trimEnd('.', '!', '…').lowercase() in MEDIA_PREVIEWS
+        // ⚠️ AN ALBUM IS ANNOUNCED IN THE PLURAL, WITH A COUNT: "Sent 15 photos." — which matches
+        // none of the singular strings above. Missing it is the worst possible miss, because an
+        // album is precisely the case that matters: fifteen job-sheet pictures were stored as the
+        // literal text "Sent 15 photos." and the photos were never fetched (Christian Manabat,
+        // 2026-09-23 10:32). Hence a pattern rather than a longer list.
+        private val MEDIA_COUNT_RE = Regex(
+            """^(sent\s+)?(\d+\s+)?(photo|photos|video|videos|image|images|file|files|attachment|attachments|gif|gifs|sticker|stickers)$"""
+        )
+
+        /**
+         * True when a notification's text is a media placeholder rather than a real message —
+         * singular or plural, with or without a count, and punctuation aside (the apps are not
+         * consistent about the trailing full stop either).
+         */
+        fun mediaPreview(content: String): Boolean {
+            val t = content.trim().trimEnd('.', '!', '…').lowercase()
+            return t in MEDIA_PREVIEWS || MEDIA_COUNT_RE.matches(t)
+        }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
