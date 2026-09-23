@@ -21,6 +21,13 @@ class UITreeAccessibilityService : AccessibilityService() {
         const val ACTION_DUMP = "com.tvl.incidentaliq.DUMP"
         var instance: UITreeAccessibilityService? = null
         private const val MAX_SCROLLS = 20        // hard cap so a huge unread backlog can't hang the read
+        private const val DRAG_MS = 300L          // how long a drag gesture takes to play
+        private const val DRAG_SETTLE_MS = 450L   // …plus the fling it leaves behind
+        private const val JUMP_TO_LATEST = "Jump to latest message"
+        // Anything starting above this line is under the toolbar or off-screen. The toolbar ends
+        // around 12% of the way down on the phone in use; a little margin beyond it is safer than
+        // treating a bubble that begins right at the edge as fully visible.
+        private const val CLIP_FRACTION = 0.14f
         private const val SCROLL_SETTLE_MS = 350L // let the list settle after each scroll before re-reading
     }
 
@@ -76,14 +83,34 @@ class UITreeAccessibilityService : AccessibilityService() {
      * naturally and this gets cheaper over time.
      */
     fun scrollToBottom() {
+        // Messenger puts a real "Jump to latest message" button on screen whenever the conversation
+        // is scrolled up, and one tap beats any number of guessed swipes: it is exact, instant, and
+        // it cannot report success while the list stays put — which the gesture path did, leaving
+        // the chat stranded in yesterday's messages (2026-09-23).
+        findByDesc(JUMP_TO_LATEST).firstOrNull()?.let {
+            if (tap(it)) {
+                Thread.sleep(SCROLL_SETTLE_MS)
+                // The button disappears once the list is at the newest message; if it is still
+                // there the tap did not take, and the swipe loop below is the fallback.
+                if (findByDesc(JUMP_TO_LATEST).isEmpty()) {
+                    AppLog.write(TAG, "scrollToBottom: jumped to latest")
+                    return
+                }
+            }
+        }
+
         for (i in 0 until MAX_SCROLLS) {
             val root = rootInActiveWindow ?: return
-            val scroller = conversationScroller(root) ?: run {
-                AppLog.write(TAG, "scrollToBottom: no scrollable list found — reading as-is")
-                return
-            }
             val sig = visibleSignature(root)
-            val moved = scroller.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+            val scroller = conversationScroller(root)
+            // ⚠️ MESSENGER HAS NO SCROLLABLE NODE — its message list reports isScrollable=false, so
+            // the accessibility action has nothing to act on and this used to give up here
+            // ("reading as-is"). Harmless while reads only ever went forward; NOT harmless once the
+            // photo pass started scrolling BACK, because the chat was then left stranded six screens
+            // up with no way home — which is what made the app look like it was wandering through
+            // history on its own (2026-09-23). The drag gesture is the way down for both apps.
+            val moved = scroller?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) == true ||
+                swipeUp()
             Thread.sleep(SCROLL_SETTLE_MS)
             // At the bottom when the list can't scroll further, OR the visible messages didn't change
             // after a scroll (the return value lies on some ROMs, so we check content too).
@@ -96,48 +123,61 @@ class UITreeAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Scroll the conversation ONE SCREEN towards older messages. Returns false when the list would
-     * not move — already at the top, or no scrollable list found.
+     * Scroll the conversation ONE SCREEN towards older messages. False when it would not move —
+     * already at the top, or the drag was refused.
      *
-     * The counterpart to scrollToBottom(), and used only by the photo pass: a photo bubble is only
-     * capturable while it is ON SCREEN, so a read that lands at the newest message cannot see an
-     * album a few messages back. Text does not need this (the notification carries it), which is why
-     * the read cycle proper still only ever drives forward.
+     * Used for ONE narrow purpose (see ReadCoordinator): a notification said photos arrived, but by
+     * the time the chat opened a later message had pushed the album off the top of the screen, and a
+     * bubble can only be opened while it is visible.
      */
     fun scrollUpOnce(): Boolean {
-        val root = rootInActiveWindow ?: run { AppLog.write(TAG, "scrollUp: no window"); return false }
+        val root = rootInActiveWindow ?: return false
         val sig = visibleSignature(root)
-
-        // Viber exposes its conversation list as scrollable and takes the accessibility action.
-        // MESSENGER DOES NOT — its message list reports isScrollable=false, so ACTION_SCROLL_BACKWARD
-        // has nothing to act on (the same reason scrollToBottom() is a no-op there). For that case
-        // the only way to move the list is to drag it, which needs canPerformGestures in
-        // accessibility_config.xml.
+        // Viber's list takes the accessibility action; MESSENGER'S DOES NOT — it reports
+        // isScrollable=false, so there is nothing to act on and the drag is the only way to move it.
         val scroller = conversationScroller(root)
         if (scroller != null && scroller.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)) {
             Thread.sleep(SCROLL_SETTLE_MS)
             if (visibleSignature(rootInActiveWindow) != sig) return true
         }
-
-        if (!swipeDown()) { AppLog.write(TAG, "scrollUp: swipe refused"); return false }
-        Thread.sleep(SCROLL_SETTLE_MS)
-        val changed = visibleSignature(rootInActiveWindow) != sig
-        if (!changed) AppLog.write(TAG, "scrollUp: list did not move (top of conversation?)")
-        return changed
+        if (!swipeDown()) return false
+        return visibleSignature(rootInActiveWindow) != sig
     }
 
     /** Drag the conversation downwards — i.e. show OLDER messages. One screen-ish per call. */
-    private fun swipeDown(): Boolean {
+    private fun swipeDown(): Boolean = dragVertically(0.30f, 0.80f)
+
+    /** Drag the conversation upwards — i.e. show NEWER messages. One screen-ish per call. */
+    private fun swipeUp(): Boolean = dragVertically(0.80f, 0.30f)
+
+    // ⚠️ dispatchGesture returns as soon as the stroke is ACCEPTED, not when the list has finished
+    // moving — so a caller that compares the screen immediately afterwards sees no change and
+    // concludes it has hit the end. Waiting out the stroke plus the fling here is what makes
+    // "did anything move?" a meaningful question for every caller.
+    private fun dragVertically(fromFrac: Float, toFrac: Float): Boolean {
         val w = resources.displayMetrics.widthPixels
         val h = resources.displayMetrics.heightPixels
-        val x = (w * 0.5f)
+        val x = w * 0.5f
         val path = Path().apply {
-            moveTo(x, h * 0.30f)
-            lineTo(x, h * 0.80f)
+            moveTo(x, h * fromFrac)
+            lineTo(x, h * toFrac)
         }
-        val stroke = GestureDescription.StrokeDescription(path, 0, 300)
-        return dispatchGesture(GestureDescription.Builder().addStroke(stroke).build(), null, null)
+        val stroke = GestureDescription.StrokeDescription(path, 0, DRAG_MS)
+        val sent = dispatchGesture(GestureDescription.Builder().addStroke(stroke).build(), null, null)
+        if (sent) Thread.sleep(DRAG_MS + DRAG_SETTLE_MS)
+        return sent
     }
+
+    /**
+     * Is this bubble's top edge cut off by the toolbar / off the top of the screen?
+     *
+     * Matters because of WHICH PHOTO a tap opens. The viewer opens on the tile that was tapped and
+     * the saver only pages FORWARD, so tapping the first tile it can see captures from there to the
+     * end — and when the first rows of a grid are hidden above the fold, "the first tile it can see"
+     * is photo 4 or 7, not photo 1. The ones before it would be silently lost.
+     */
+    fun isClipped(bubble: ImageBubble): Boolean =
+        bubble.topPx < resources.displayMetrics.heightPixels * CLIP_FRACTION
 
     /** Photo bubbles in the chat currently on screen. Empty for anything that isn't a chat. */
     fun readImageBubbles(): List<ImageBubble> {

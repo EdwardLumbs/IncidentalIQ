@@ -27,7 +27,8 @@ data class ImageBubble(
     val sender: String,
     val timeText: String,        // as shown in the UI ("3:52 PM"); "" when the app didn't say
     val count: Int,              // photos in this bubble
-    val open: AccessibilityNodeInfo, // tap this to open the viewer on the FIRST photo
+    val open: AccessibilityNodeInfo, // tap this to open the viewer on the FIRST VISIBLE photo
+    val topPx: Int,              // top edge of the bubble on screen; negative/small = cut off above
 ) {
     /**
      * Stable identity for the bubble, so re-reading the same chat later recognises the album it
@@ -42,10 +43,12 @@ data class ImageBubble(
     fun albumKey(): String = sha256("$source|$chat|$sender|${timestamp()}|$count")
 
     /** PH wall-clock ISO for the bubble: today's date at the shown time, else now. */
-    fun timestamp(): String {
+    fun timestamp(): String = ISO.format(Date(millis()))
+
+    /** The bubble's moment in epoch millis — today's date at the time the app showed, else now. */
+    fun millis(): Long {
         val now = Date()
-        val shown = parseTimeToday(timeText, now)
-        return ISO.format(shown ?: now)
+        return (parseTimeToday(timeText, now) ?: now).time
     }
 
     companion object {
@@ -151,11 +154,11 @@ object MessengerImageParser {
             val bounds = Rect()
             ordered.forEach { bounds.union(it.rect()) }
             val (sender, time) = attributionFor(bounds)
-            out.add(ImageBubble("MESSENGER", chat, sender, time, ordered.size, ordered.first()))
+            out.add(ImageBubble("MESSENGER", chat, sender, time, ordered.size, ordered.first(), bounds.top))
         }
         for (n in singles) {
             val (sender, time) = attributionFor(n.rect())
-            out.add(ImageBubble("MESSENGER", chat, sender, time, 1, n))
+            out.add(ImageBubble("MESSENGER", chat, sender, time, 1, n, n.rect().top))
         }
         return out.sortedBy { it.open.rect().top }
     }
@@ -185,7 +188,7 @@ object ViberImageParser {
         fun flush(time: String) {
             val n = pending ?: return
             pending = null
-            out.add(ImageBubble("VIBER", chat, currentSender.ifBlank { chat }, time, 1, n))
+            out.add(ImageBubble("VIBER", chat, currentSender.ifBlank { chat }, time, 1, n, n.rect().top))
         }
 
         walk(root) { n ->

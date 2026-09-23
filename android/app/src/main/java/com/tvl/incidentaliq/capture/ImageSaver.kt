@@ -36,6 +36,7 @@ object ImageSaver {
     private const val FILE_WAIT_MS = 6000L     // how long one photo gets to land in the gallery
     private const val FILE_POLL_MS = 250L
     private const val SETTLE_AFTER_SWIPE_MS = 900L
+    private const val MAX_UNCLIP_SCROLLS = 2      // bring a cut-off bubble fully into view
     private const val MAX_PHOTOS_PER_BUBBLE = 40  // a pathological album can't hold the phone hostage
 
     /**
@@ -50,13 +51,28 @@ object ImageSaver {
         val count = bubble.count.coerceAtMost(MAX_PHOTOS_PER_BUBBLE)
         AppLog.write(TAG, "bubble: ${bubble.source} \"${bubble.chat}\" ${bubble.sender} ${bubble.timeText} — $count photo(s)")
 
+        // The bubble must be FULLY on screen before anything is tapped: the viewer opens on the tile
+        // that was tapped and we only page forward from there, so a grid whose first rows are hidden
+        // above the fold would be captured from the middle onwards. Scrolling back brings the start
+        // of it into view; if it still will not fit, the save goes ahead rather than being abandoned
+        // — some of the album beats none of it, and the placeholder records the shortfall.
+        var target = bubble
+        var nudges = 0
+        while (svc.isClipped(target) && nudges < MAX_UNCLIP_SCROLLS) {
+            AppLog.write(TAG, "bubble is cut off at the top — scrolling back to see all of it")
+            if (!svc.scrollUpOnce()) break
+            nudges++
+            target = refindBubble(svc, bubble) ?: break
+        }
+        if (svc.isClipped(target)) AppLog.write(TAG, "bubble still cut off — capturing from the first visible photo")
+
         val before = ImageQueue.snapshot(bubble.source)
         // Two attempts: a tap can land while the list is still settling from the previous bubble,
         // and re-finding the node between tries picks up wherever the row has moved to.
         var opened = false
         for (attempt in 1..2) {
-            val target = if (attempt == 1) bubble.open else refind(svc, bubble) ?: bubble.open
-            if (!svc.tap(target)) {
+            val node = if (attempt == 1) target.open else refind(svc, bubble) ?: target.open
+            if (!svc.tap(node)) {
                 AppLog.write(TAG, "tap $attempt/2 on the photo did not register")
                 Thread.sleep(600)
                 continue
@@ -125,7 +141,11 @@ object ImageSaver {
 
     /** The same bubble in a freshly-read tree — its node, after the screen may have moved. */
     private fun refind(svc: UITreeAccessibilityService, bubble: ImageBubble): android.view.accessibility.AccessibilityNodeInfo? =
-        try { svc.readImageBubbles().firstOrNull { it.albumKey() == bubble.albumKey() }?.open }
+        refindBubble(svc, bubble)?.open
+
+    /** The same bubble, re-read — so its on-screen position is current after a scroll. */
+    private fun refindBubble(svc: UITreeAccessibilityService, bubble: ImageBubble): ImageBubble? =
+        try { svc.readImageBubbles().firstOrNull { it.albumKey() == bubble.albumKey() } }
         catch (_: Exception) { null }
 
     /** Save whatever the viewer is currently showing, and wait for the file to hit the folder. */

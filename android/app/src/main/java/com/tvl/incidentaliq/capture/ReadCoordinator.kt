@@ -31,10 +31,9 @@ object ReadCoordinator {
     private const val QUIET_MS = 2000L     // close after this long with no NEW message
     private const val RESCAN_MS = 600L     // how often to re-read while settling
     private const val MAX_SETTLE_MS = 8000L // hard cap on lingering in a chatty group
-    private const val PHOTO_LOOKBACK_SCREENS = 6  // how far back an ordinary read hunts for unsaved albums
-    // The in-app trigger is a deliberate "go and find what was missed", so it digs much deeper than
-    // a routine cycle would — it is worth a minute of scrolling to recover an album nobody else can.
-    private const val PHOTO_LOOKBACK_DEEP = 25
+    private const val PHOTO_LOOKBACK_SCREENS = 2      // only ever "just above the newest message"
+    private const val RECENT_WINDOW_MS = 60 * 60 * 1000L  // the bubble must be from the last hour
+    private const val RECENT_SKEW_MS = 10 * 60 * 1000L    // a slightly-future time is clock rounding
 
     data class Task(
         val source: String,         // VIBER | MESSENGER
@@ -169,7 +168,13 @@ object ReadCoordinator {
         // Every photo costs a couple of seconds of tapping, so the work is skipped entirely for
         // bubbles this phone has already saved (ImageQueue.wasSeen) — a chat gets re-opened on
         // every truncated message, and its photos are still sitting there each time.
-        val photos = capturePhotos(ctx, svc, task.pkg, task.storeOnly)
+        //
+        // ⚠️ ONLY WHAT IS ON SCREEN. It does not scroll looking for older albums. A version that did
+        // was tried and removed (2026-09-23): walking back through history re-captured months of old
+        // bubbles, 17 of them with no sender at all because the attribution had scrolled out of view,
+        // and an album key built from a blank sender is not even stable enough to stop it happening
+        // again. Anything already scrolled away stays in the chat, where it can still be read.
+        val photos = capturePhotos(ctx, svc, task.pkg, task.storeOnly, expectPhotos = task.isImage)
 
         // Re-read after the photo phase: no notification fires for the chat that is on screen, so
         // whatever landed during those taps is only visible by looking again.
@@ -208,7 +213,7 @@ object ReadCoordinator {
      * The in-app trigger (long-press Dump Tree) for checking the save path on a real chat without
      * waiting for a notification to arrive — the photo equivalent of dumpTree().
      */
-    fun capturePhotosOnScreen(ctx: Context, lookBack: Int = PHOTO_LOOKBACK_DEEP): Int {
+    fun capturePhotosOnScreen(ctx: Context): Int {
         val svc = UITreeAccessibilityService.instance ?: run {
             AppLog.write(TAG, "photo test: accessibility service not running")
             return 0
@@ -224,7 +229,7 @@ object ReadCoordinator {
         AppLog.write(TAG, "────── PHOTO TEST on $pkg ──────")
         WakeLockHelper.acquire(ctx)
         return try {
-            capturePhotos(ctx, svc, pkg, storeOnly = false, lookBack = lookBack)
+            capturePhotos(ctx, svc, pkg, storeOnly = false, expectPhotos = false)
         } finally {
             WakeLockHelper.release()
             AppLog.write(TAG, "────── PHOTO TEST END ──────")
@@ -233,7 +238,7 @@ object ReadCoordinator {
 
     private fun capturePhotos(
         ctx: Context, svc: UITreeAccessibilityService, pkg: String, storeOnly: Boolean,
-        lookBack: Int = PHOTO_LOOKBACK_SCREENS,
+        expectPhotos: Boolean,
     ): Int {
         if (!ImagePermissions.canRead(ctx)) return 0   // status is reported in the app, not per-read
         val bubbles = try {
@@ -242,7 +247,56 @@ object ReadCoordinator {
             AppLog.write(TAG, "photo scan failed: ${e.message}")
             return 0
         }
-        return savePass(ctx, svc, pkg, storeOnly, bubbles, lookBack)
+        var saved = saveVisible(ctx, svc, pkg, storeOnly, bubbles)
+        if (bubbles.isEmpty() && expectPhotos) saved += lookBackOneScreen(ctx, svc, pkg, storeOnly)
+        return saved
+    }
+
+    /**
+     * The notification said photos, but the chat opened on a screen with none. Look back a screen or
+     * two, save what is found, and return to the newest message.
+     *
+     * ⚠️ DELIBERATELY TINY, and it fires on one condition only. Photos can only be opened while
+     * visible, and a later message can push an album off the top before the read gets there — a job
+     * sheet followed straight by a long booking post is exactly that shape. This closes that, and
+     * nothing else.
+     *
+     * An earlier version walked back 25 screens on every read and was removed the same day: it
+     * re-captured months of old bubbles, 17 of them with no sender at all because their attribution
+     * had scrolled out of view, and an album key built from a blank sender is not stable enough to
+     * stop it happening again. Hence the guards here — only when photos were announced, only when
+     * none are on screen, two screens at most, and only bubbles recent enough to be the ones just
+     * announced. A PARTLY visible album needs none of this: opening any tile pages the viewer
+     * through the whole bubble regardless of how many the grid shows.
+     */
+    private fun lookBackOneScreen(
+        ctx: Context, svc: UITreeAccessibilityService, pkg: String, storeOnly: Boolean,
+    ): Int {
+        var saved = 0
+        var screens = 0
+        while (screens < PHOTO_LOOKBACK_SCREENS) {
+            if (!svc.scrollUpOnce()) break
+            screens++
+            val found = try { svc.readImageBubbles() } catch (_: Exception) { emptyList() }
+            val recent = found.filter { it.isRecent() }
+            if (recent.isNotEmpty()) {
+                AppLog.write(TAG, "photos were announced but were off screen — found ${recent.size} bubble(s) $screens screen(s) back")
+                saved += saveVisible(ctx, svc, pkg, storeOnly, recent)
+                break
+            }
+        }
+        if (screens > 0) svc.scrollToBottom()   // leave the chat where the rest of the cycle expects it
+        return saved
+    }
+
+    /**
+     * Recent enough to be the bubble the notification was about. Anything older is history the app
+     * was never asked to collect, and a bubble with no time on it cannot be keyed stably at all.
+     */
+    private fun ImageBubble.isRecent(): Boolean {
+        if (timeText.isBlank()) return false
+        val age = System.currentTimeMillis() - millis()
+        return age in -RECENT_SKEW_MS..RECENT_WINDOW_MS
     }
 
     /**
@@ -261,27 +315,6 @@ object ReadCoordinator {
      * few hundred milliseconds of finding nothing new. The chat is driven back to the bottom at the
      * end, because everything else in the cycle assumes it is there.
      */
-    private fun savePass(
-        ctx: Context, svc: UITreeAccessibilityService, pkg: String, storeOnly: Boolean,
-        onScreen: List<ImageBubble>, lookBack: Int,
-    ): Int {
-        var saved = 0
-        var bubbles = onScreen
-        var screens = 0
-        while (true) {
-            saved += saveVisible(ctx, svc, pkg, storeOnly, bubbles)
-            if (screens >= lookBack) break
-            if (!svc.scrollUpOnce()) break          // top of the conversation
-            screens++
-            bubbles = try { svc.readImageBubbles() } catch (_: Exception) { emptyList() }
-        }
-        if (screens > 0) {
-            AppLog.write(TAG, "photo pass looked back $screens screen(s)")
-            svc.scrollToBottom()                    // leave the chat where the rest of the cycle expects it
-        }
-        return saved
-    }
-
     /** Save the unsaved bubbles visible right now. */
     private fun saveVisible(
         ctx: Context, svc: UITreeAccessibilityService, pkg: String, storeOnly: Boolean,
