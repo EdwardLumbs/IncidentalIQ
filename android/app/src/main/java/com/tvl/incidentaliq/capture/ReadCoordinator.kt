@@ -35,6 +35,63 @@ object ReadCoordinator {
     private const val RECENT_WINDOW_MS = 60 * 60 * 1000L  // the bubble must be from the last hour
     private const val RECENT_SKEW_MS = 10 * 60 * 1000L    // a slightly-future time is clock rounding
 
+    /**
+     * How long to wait before looking again when a photo notification produced NO photos.
+     *
+     * The message and its attachments do not arrive together. Facebook delivers the message the
+     * instant the sender hits send, and the photos follow whenever the sender's phone manages to
+     * finish uploading them — so the chat renders a plain text placeholder ("Sent 16 photos.") with
+     * no image tiles in it at all, and a read that fires three seconds after the notification finds
+     * an empty screen. That is not an edge case here: the senders are drivers standing in ports and
+     * container yards on whatever signal they have. It happened to Manuelito Meridor's 16 photos on
+     * 2026-09-23 at 14:44, and a minute later he typed the reason himself — "hndi po agad makapag
+     * send ng picture wala po signal d2".
+     *
+     * So: look again. Twice, then stop.
+     *
+     * ⚠️ TWO, not a long ladder, because the common case turns out to be UNRECOVERABLE and no amount
+     * of looking fixes it. When a sender's upload never completes, Facebook delivers a plain TEXT
+     * message whose body is literally "Sent 16 photos." — in the accessibility tree it is shaped
+     * exactly like any other text message, with no image tiles behind it and nothing to tap. That is
+     * not a placeholder that fills in later: Manuelito's was still text 36 minutes on, and it read
+     * the same on a second device, so the photos are not on Facebook's servers either. Verified on
+     * 2026-09-23. And if his phone ever does push them through, that arrives as a NEW message with
+     * its own notification, which the normal path already handles — the retry is not what saves it.
+     *
+     * So the retry only covers the genuinely narrow case it can: media that exists but hadn't
+     * finished rendering in the three seconds between the notification and the scan. Two looks catch
+     * that. Anything beyond is screen-on time spent re-opening chats for photos that do not exist,
+     * which is also exactly the restlessness the phone was complained about for.
+     *
+     * Re-reading is safe to do blindly. A bubble this phone has already saved is skipped by
+     * ImageQueue.wasSeen, the server drops a photo whose content hash it already holds, and
+     * UNIQUE(message_id, sha256) is the backstop under both.
+     */
+    private val PHOTO_RETRY_DELAYS_MS = longArrayOf(
+        60_000L,      // +1m  — media that existed but hadn't rendered yet
+        300_000L,     // +6m  — last look; past here it was never delivered, see recordUndelivered()
+    )
+
+    private const val HEAL_RETRY_MS = 30_000L   // let the app finish its cold start
+
+    /**
+     * Restarting is driven by the SYMPTOM, never by a clock: whenever a bubble reads "Sent N photos."
+     * the app is broken and gets restarted, however recently it last was. A timed cooldown was tried
+     * and thrown out — if Messenger rots again five minutes after a repair, sitting on our hands for
+     * the rest of the cooldown just loses photos for no reason.
+     *
+     * The only two guards are about not flogging a dead horse:
+     *   MIN_HEAL_GAP_MS   stops a tight loop, and is shorter than one repair cycle takes anyway, so
+     *                     in practice it never fires.
+     *   MAX_FAILED_HEALS  if restarting twice running fixed nothing, the cause is something else and
+     *                     a third restart will not find it either. Stop, and say so in the log.
+     *                     Reset the moment any photo is captured, because that proves it works again.
+     */
+    private const val MIN_HEAL_GAP_MS = 60_000L
+    private const val MAX_FAILED_HEALS = 2
+    private var lastHealAt = 0L
+    private var failedHeals = 0
+
     data class Task(
         val source: String,         // VIBER | MESSENGER
         val pkg: String,            // com.viber.voip | com.facebook.orca
@@ -45,6 +102,9 @@ object ReadCoordinator {
         val isImage: Boolean = false,   // image notifs have no useful text → no fallback save
         val storeOnly: Boolean = false, // archive-only group → tag every message so backend skips Groq
         val immediate: Boolean = false, // immediate-upload group → sync as soon as something is saved
+        val attempt: Int = 0,           // 0 = the notification itself; >0 = a photo retry (see below)
+        val healed: Boolean = false,    // the chat app was already restarted once for this album
+        val sawChat: Boolean = false,   // some attempt actually got the chat on screen and looked
     )
 
     /**
@@ -65,6 +125,122 @@ object ReadCoordinator {
                 Uploader.syncNow(ctx)
             }
         }
+    }
+
+    /**
+     * Photos were announced, none are on screen. Work out WHY, because the two causes need opposite
+     * handling:
+     *
+     *   the bubble reads "Sent 3 photos."   Messenger has stopped fetching attachments. Waiting is
+     *                                       useless — it stayed rotten for 96 minutes on 2026-09-23.
+     *                                       Restart Messenger and look again straight away.
+     *   nothing photo-shaped at all         media that exists but hasn't rendered yet, or a bubble
+     *                                       already scrolled past. Give it time; ordinary retry.
+     *
+     * Healing happens at most ONCE per album (`healed`) and at most once every HEAL_COOLDOWN_MS
+     * across the whole app. Both guards matter: restarting Messenger costs every other chat its
+     * warm state, and a loop that force-stopped it every few seconds would take the monitor off the
+     * air entirely while looking busy.
+     */
+    private fun healOrRetry(ctx: Context, svc: UITreeAccessibilityService, task: Task) {
+        val rotten = try { svc.photosRenderedAsText() } catch (_: Exception) { false }
+
+        // A restarted read that STILL finds text means the restart didn't cure it. Count that, so a
+        // permanently broken Messenger doesn't get force-stopped once per photo message forever.
+        if (task.healed) {
+            if (rotten) failedHeals++
+            schedulePhotoRetry(ctx, task)
+            return
+        }
+        if (!rotten) { schedulePhotoRetry(ctx, task); return }
+
+        if (failedHeals >= MAX_FAILED_HEALS) {
+            AppLog.write(TAG, "${task.pkg} still shows photos as text after $failedHeals restarts — " +
+                              "something else is wrong, not restarting again until a photo saves")
+            schedulePhotoRetry(ctx, task)
+            return
+        }
+        val since = System.currentTimeMillis() - lastHealAt
+        if (since < MIN_HEAL_GAP_MS) {
+            AppLog.write(TAG, "${task.pkg} was restarted ${since / 1000}s ago — letting that one finish first")
+            schedulePhotoRetry(ctx, task)
+            return
+        }
+        lastHealAt = System.currentTimeMillis()
+        AppLog.write(TAG, "photos are showing as TEXT — ${task.pkg} has stopped fetching them; restarting it")
+        AppHealer.restart(ctx, svc, task.pkg)
+        // Straight back in, not down the normal ladder: the repair is immediate and the bubble is
+        // right there. The delay is only to let the app finish its cold start.
+        scheduleRetry(ctx, task.copy(healed = true), HEAL_RETRY_MS, "re-reading after restart")
+    }
+
+    /**
+     * Put this task back in the queue after the next retry delay, because a notification that
+     * announced photos produced none. Does nothing once the ladder is exhausted.
+     *
+     * Silent on the first schedule of a chat that simply hasn't finished uploading — the log line
+     * says which attempt this is, so a chat retrying four times is visible without reading the whole
+     * file.
+     */
+    private fun schedulePhotoRetry(ctx: Context, task: Task) {
+        if (task.attempt >= PHOTO_RETRY_DELAYS_MS.size) {
+            AppLog.write(TAG, "photos never appeared for \"${task.chatHint}\" after ${task.attempt} retries — giving up")
+            // Only claim the photos weren't there if we actually got in and looked. A read that
+            // timed out before the chat opened knows nothing about them, and writing "not saved"
+            // into the timeline off the back of that is just a lie in the record.
+            if (task.sawChat) recordUndelivered(ctx, task)
+            else AppLog.write(TAG, "…but the chat never opened, so nothing is claimed about the photos")
+            return
+        }
+        val delay = PHOTO_RETRY_DELAYS_MS[task.attempt]
+        val next = task.attempt + 1
+        scheduleRetry(ctx, task.copy(attempt = next), delay,
+                      "retry $next of ${PHOTO_RETRY_DELAYS_MS.size}")
+    }
+
+    /** Re-queue [task] after [delay]. The one place a retry is booked, so every one of them logs. */
+    private fun scheduleRetry(ctx: Context, task: Task, delay: Long, why: String) {
+        AppLog.write(TAG, "no photos on screen — $why in ${delay / 1000}s")
+        val app = ctx.applicationContext
+        // handler is non-null here: this only runs from inside a task, which the handler thread drove.
+        handler?.postDelayed({ enqueue(app, task) }, delay)
+    }
+
+    /**
+     * Photos were announced and never turned up. Write that down.
+     *
+     * The point is that the loss stops being SILENT. Someone reading the panel a week later should
+     * see "Manuelito Meridor — 16 photos announced, never delivered" sitting in the timeline at 2:44
+     * PM, not an unexplained gap between two text messages that leaves them wondering whether the
+     * capture phone was broken. It usually means the sender's upload died on bad signal, which is a
+     * thing to chase the sender about — and the dispatchers are already doing that by hand ("@Francis
+     * Larin pasend ng pictures"), so the record is what they actually want.
+     *
+     * Deliberately NOT a failure of this app, and worded so nobody reads it as one.
+     */
+    private fun recordUndelivered(ctx: Context, task: Task) {
+        val what = task.fallbackText.ifBlank { "photos" }.trim()
+        val saved = MessageStore.save(
+            ctx,
+            CapturedMessage(
+                task.source, task.chatHint, task.sender,
+                "[$what — photos never appeared on the capture phone, not saved]",
+                false, viaAccessibility = false, storeOnly = task.storeOnly,
+            ),
+        )
+        if (saved && task.immediate) Uploader.syncNow(ctx)
+    }
+
+    /**
+     * Same conversation? The notification's group name and the title drawn at the top of the chat are
+     * produced by different parts of Messenger and don't always agree on whitespace or case, so this
+     * is deliberately loose — it is a "did we end up somewhere completely different" check, not an
+     * identity test.
+     */
+    private fun sameChat(onScreen: String?, hint: String): Boolean {
+        val a = onScreen?.trim()?.lowercase() ?: return false
+        val b = hint.trim().lowercase()
+        return a == b || a.startsWith(b) || b.startsWith(a)
     }
 
     private val queue = ArrayDeque<Task>()
@@ -95,7 +271,8 @@ object ReadCoordinator {
     }
 
     private fun runTask(ctx: Context, task: Task) {
-        AppLog.write(TAG, "────── READ START [${task.source}] \"${task.chatHint}\" ──────")
+        val retry = if (task.attempt > 0) " (photo retry ${task.attempt}/${PHOTO_RETRY_DELAYS_MS.size})" else ""
+        AppLog.write(TAG, "────── READ START [${task.source}] \"${task.chatHint}\"$retry ──────")
 
         val svc = UITreeAccessibilityService.instance
         if (svc == null) {
@@ -110,6 +287,7 @@ object ReadCoordinator {
         if (!openChat(ctx, task)) {
             AppLog.write(TAG, "ABORT — could not open chat")
             saveFallback(ctx, task)
+            if (task.isImage) schedulePhotoRetry(ctx, task)
             WakeLockHelper.release()
             return
         }
@@ -117,19 +295,33 @@ object ReadCoordinator {
         // PHASE 1 — readiness: wait until the target app is foreground and readable.
         var ready = false
         var tries = 0
-        while (tries < POLL_TRIES) {
+        // A just-restarted app is starting COLD — Messenger takes well over the usual six seconds to
+        // get a thread on screen from a force stop, and timing out here would throw away the very
+        // read the restart was performed for.
+        val pollTries = if (task.healed) POLL_TRIES * 4 else POLL_TRIES
+        while (tries < pollTries) {
             Thread.sleep(POLL_MS); tries++
             if (svc.foregroundPackage() == task.pkg) {
                 val res = svc.readActiveChat()
                 if (res != null && res.second.isNotEmpty()) { ready = true; break }
+                // A SCREENFUL OF PHOTOS HAS NO TEXT IN IT. Waiting for a parsed message declares a
+                // perfectly good chat unreadable, times out, and — worse — then records the photos
+                // as "never appeared" when they were on screen the whole time (2026-09-23 21:53).
+                // Being in the chat is the real readiness signal; messages are just the usual proof.
+                if (svc.inChat(task.pkg) && svc.readImageBubbles().isNotEmpty()) { ready = true; break }
             }
         }
         if (!ready) {
             AppLog.write(TAG, "TIMEOUT — chat not readable after ${tries}×${POLL_MS}ms (fg=${svc.foregroundPackage()})")
             saveFallback(ctx, task)
+            if (task.isImage) schedulePhotoRetry(ctx, task)
             WakeLockHelper.release()
             return
         }
+
+        // From here on the chat is genuinely on screen, so anything this read concludes about its
+        // photos is worth acting on. Retries booked below carry that fact forward.
+        val seen = task.copy(sawChat = true)
 
         // PHASE 1.5 — drive to the bottom BEFORE reading. Viber opens at the unread divider, not the
         // newest message, so without this we'd re-capture whatever old screenful it landed on and miss
@@ -174,7 +366,25 @@ object ReadCoordinator {
         // bubbles, 17 of them with no sender at all because the attribution had scrolled out of view,
         // and an album key built from a blank sender is not even stable enough to stop it happening
         // again. Anything already scrolled away stays in the chat, where it can still be read.
-        val photos = capturePhotos(ctx, svc, task.pkg, task.storeOnly, expectPhotos = task.isImage)
+        // A retry may have landed in the wrong conversation (see activeChatTitle) — in which case the
+        // photos on screen are somebody else's and none of this applies. Try again rather than scrape
+        // them. The first attempt is trusted: it came straight off the notification's own intent.
+        val strayed = task.attempt > 0 && !sameChat(svc.activeChatTitle(), task.chatHint)
+        if (strayed) {
+            AppLog.write(TAG, "retry landed on \"${svc.activeChatTitle()}\", not \"${task.chatHint}\" — skipping photo pass")
+        }
+        val photos =
+            if (strayed) 0
+            else capturePhotos(ctx, svc, task.pkg, task.storeOnly, expectPhotos = task.isImage)
+
+        // Photos came through, so whatever was wrong isn't any more — let restarting be possible
+        // again the next time it's needed.
+        if (photos > 0) failedHeals = 0
+
+        // The notification said photos and there are none on screen. Two different things look like
+        // this, and they need opposite responses — so ask which one it is before reacting.
+        if (task.isImage && photos == 0 && !strayed) healOrRetry(ctx, svc, seen)
+        else if (task.isImage && photos == 0) schedulePhotoRetry(ctx, seen)
 
         // Re-read after the photo phase: no notification fires for the chat that is on screen, so
         // whatever landed during those taps is only visible by looking again.

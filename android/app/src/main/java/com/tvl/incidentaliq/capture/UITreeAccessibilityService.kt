@@ -23,12 +23,19 @@ class UITreeAccessibilityService : AccessibilityService() {
         private const val MAX_SCROLLS = 20        // hard cap so a huge unread backlog can't hang the read
         private const val DRAG_MS = 300L          // how long a drag gesture takes to play
         private const val DRAG_SETTLE_MS = 450L   // …plus the fling it leaves behind
-        private const val JUMP_TO_LATEST = "Jump to latest message"
+        private const val JUMP_TO_LATEST = "Jump to latest message"   // Messenger (content-desc)
+        private const val VIBER_JUMP_TO_BOTTOM = "btn_jump_to_bottom" // Viber (view id)
         // Anything starting above this line is under the toolbar or off-screen. The toolbar ends
         // around 12% of the way down on the phone in use; a little margin beyond it is safer than
         // treating a bubble that begins right at the edge as fully visible.
         private const val CLIP_FRACTION = 0.14f
         private const val SCROLL_SETTLE_MS = 350L // let the list settle after each scroll before re-reading
+
+        // "Sent 3 photos." / "Sent a photo." — Messenger's summary string, drawn as a text bubble
+        // when the app has given up fetching the attachment. See photosRenderedAsText().
+        private val PHOTO_SUMMARY_RE =
+            Regex("""\bSent (a|an|\d+) (photo|photos|video|videos|attachment|attachments)\.""",
+                  RegexOption.IGNORE_CASE)
     }
 
     // Internal dump trigger. Registered NOT_EXPORTED so no other app on the device can fire it
@@ -87,15 +94,21 @@ class UITreeAccessibilityService : AccessibilityService() {
         // is scrolled up, and one tap beats any number of guessed swipes: it is exact, instant, and
         // it cannot report success while the list stays put — which the gesture path did, leaving
         // the chat stranded in yesterday's messages (2026-09-23).
-        findByDesc(JUMP_TO_LATEST).firstOrNull()?.let {
-            if (tap(it)) {
-                Thread.sleep(SCROLL_SETTLE_MS)
-                // The button disappears once the list is at the newest message; if it is still
-                // there the tap did not take, and the swipe loop below is the fallback.
-                if (findByDesc(JUMP_TO_LATEST).isEmpty()) {
-                    AppLog.write(TAG, "scrollToBottom: jumped to latest")
-                    return
-                }
+        // ⚠️ VIBER HAS THE SAME BUTTON UNDER A DIFFERENT NAME — btn_jump_to_bottom, with the unread
+        // count on it. Handling only Messenger's meant Viber reads opened on the unread divider and
+        // the loop below immediately declared "reached bottom after 0 scroll(s)" while the newest
+        // message was still 43 rows down, so the photo that triggered the read was never on screen
+        // and every Viber album in a busy group was lost (2026-09-23, "TVL (PEZA) / RCI-CCB - GC",
+        // six give-ups in one evening). The photo pass can only save what is visible, so landing at
+        // the bottom is not cosmetic — it is the whole job.
+        val jump = findByDesc(JUMP_TO_LATEST).firstOrNull() ?: findByViewId(VIBER_JUMP_TO_BOTTOM)
+        if (jump != null && tap(jump)) {
+            Thread.sleep(SCROLL_SETTLE_MS)
+            // The button disappears once the list is at the newest message; if it is still
+            // there the tap did not take, and the swipe loop below is the fallback.
+            if (findByDesc(JUMP_TO_LATEST).isEmpty() && findByViewId(VIBER_JUMP_TO_BOTTOM) == null) {
+                AppLog.write(TAG, "scrollToBottom: jumped to latest")
+                return
             }
         }
 
@@ -115,8 +128,16 @@ class UITreeAccessibilityService : AccessibilityService() {
             // At the bottom when the list can't scroll further, OR the visible messages didn't change
             // after a scroll (the return value lies on some ROMs, so we check content too).
             if (!moved || visibleSignature(rootInActiveWindow) == sig) {
-                AppLog.write(TAG, "scrollToBottom: reached bottom after $i scroll(s)")
-                return
+                // …unless a jump-to-bottom button is still showing, which is the apps telling us
+                // outright that we are NOT at the newest message. Believing "it didn't move, so we
+                // must be at the bottom" is how a Viber read reported "reached bottom after 0
+                // scroll(s)" while sitting 43 messages up.
+                val stillAbove =
+                    findByDesc(JUMP_TO_LATEST).isNotEmpty() || findByViewId(VIBER_JUMP_TO_BOTTOM) != null
+                if (!stillAbove) {
+                    AppLog.write(TAG, "scrollToBottom: reached bottom after $i scroll(s)")
+                    return
+                }
             }
         }
         AppLog.write(TAG, "scrollToBottom: hit MAX_SCROLLS ($MAX_SCROLLS) cap — read may miss oldest backlog")
@@ -179,6 +200,24 @@ class UITreeAccessibilityService : AccessibilityService() {
     fun isClipped(bubble: ImageBubble): Boolean =
         bubble.topPx < resources.displayMetrics.heightPixels * CLIP_FRACTION
 
+    /**
+     * Name of the chat currently on screen, or null when that isn't a chat we can read.
+     *
+     * Used to confirm WHERE a read actually landed. A retry fires the same notification's
+     * contentIntent, and once that notification has been dismissed the intent is dead and openChat
+     * falls back to plain-launching the app — which lands on whatever conversation was last open.
+     * Saving every photo visible there would be exactly the indiscriminate history-scraping that was
+     * torn out on 2026-09-23, so the photo pass on a retry checks this first.
+     */
+    fun activeChatTitle(): String? {
+        val root = rootInActiveWindow ?: return null
+        return when (root.packageName?.toString()) {
+            "com.viber.voip" -> ViberParser.chatTitle(root)
+            "com.facebook.orca" -> MessengerParser.chatTitle(root)
+            else -> null
+        }
+    }
+
     /** Photo bubbles in the chat currently on screen. Empty for anything that isn't a chat. */
     fun readImageBubbles(): List<ImageBubble> {
         val root = rootInActiveWindow ?: return emptyList()
@@ -200,6 +239,36 @@ class UITreeAccessibilityService : AccessibilityService() {
         return out
     }
 
+    /**
+     * Is Messenger showing photo messages as PLAIN TEXT instead of loading them?
+     *
+     * Messenger's process rots on this phone. It keeps delivering notifications and keeps drawing
+     * text messages perfectly, but stops fetching attachments and draws the summary string in their
+     * place — a bubble reading "Sent 3 photos." that is, in the tree, an ordinary text message:
+     *
+     *   Francis, Sent 3 photos., double tap to see sent/receive date and time, …   ← rotten
+     *   Edcel, On the way na kami sa BOC, double tap to see sent/receive date, …   ← normal text
+     *
+     * There are no image tiles behind it and nothing to tap. Proven on 2026-09-23: the phone was
+     * showing "Sent 2 photos." for photos EDWARD HIMSELF had sent minutes earlier, which Facebook
+     * obviously held, and force-stopping Messenger brought the same messages back as real photos.
+     * Photos from Monday kept rendering throughout, because those were already cached — so it is the
+     * fetching that breaks, not the display.
+     *
+     * A person could of course type "Sent 3 photos." by hand. That is why this is never the sole
+     * trigger: the caller only asks once a photo notification has already produced no bubbles at all.
+     */
+    fun photosRenderedAsText(): Boolean {
+        if (foregroundPackage() != "com.facebook.orca") return false
+        var found = false
+        walkAll(rootInActiveWindow) { n ->
+            if (found) return@walkAll
+            val t = n.text?.toString() ?: n.contentDescription?.toString() ?: return@walkAll
+            if (PHOTO_SUMMARY_RE.containsMatchIn(t)) found = true
+        }
+        return found
+    }
+
     /** True when any node on screen carries this view id (Viber's readable ids). */
     fun hasViewId(id: String): Boolean {
         var found = false
@@ -217,6 +286,9 @@ class UITreeAccessibilityService : AccessibilityService() {
         }
         return hit
     }
+
+    /** Walk every node currently on screen. For callers outside this class (see AppHealer). */
+    fun walkVisible(action: (AccessibilityNodeInfo) -> Unit) = walkAll(rootInActiveWindow, action)
 
     private fun walkAll(node: AccessibilityNodeInfo?, action: (AccessibilityNodeInfo) -> Unit) {
         node ?: return

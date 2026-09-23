@@ -28,9 +28,16 @@ class NotificationListener : NotificationListenerService() {
         // "Sent a photo" in others. An exact-match miss is silent and expensive — the notification is
         // stored as if its text WERE the message, so the chat keeps a useless "Sent a photo." row and
         // the actual photo is never fetched (seen live 2026-09-22).
+        // ⚠️ PHOTOS ONLY — video is deliberately NOT here. The save path drives the apps' own photo
+        // viewer and picks the file out of the gallery folder; there is no equivalent for video and
+        // none was ever built. Listing video meant every clip was chased through two retries and then
+        // written into the timeline as "photos never appeared on the capture phone", which is simply
+        // untrue — nothing ever went looking for them (Christian Rex Pielago, 2026-09-23 23:09).
+        // Left out, a video notification is stored as the ordinary message it is: "Sent a video."
+        // Stickers and GIFs are in the same boat and kept only because they are harmless noise.
         private val MEDIA_PREVIEWS = setOf(
-            "", "sent a photo", "sent a video", "photo", "video", "sent a sticker", "sent an attachment",
-            "sent an image", "sent a file", "sent a gif"
+            "", "sent a photo", "photo", "sent an attachment",
+            "sent an image", "sent a file", "sent a gif", "sent a sticker"
         )
 
         // ⚠️ AN ALBUM IS ANNOUNCED IN THE PLURAL, WITH A COUNT: "Sent 15 photos." — which matches
@@ -39,16 +46,44 @@ class NotificationListener : NotificationListenerService() {
         // literal text "Sent 15 photos." and the photos were never fetched (Christian Manabat,
         // 2026-09-23 10:32). Hence a pattern rather than a longer list.
         private val MEDIA_COUNT_RE = Regex(
-            """^(sent\s+)?(\d+\s+)?(photo|photos|video|videos|image|images|file|files|attachment|attachments|gif|gifs|sticker|stickers)$"""
+            """^(sent\s+)?(a|an|\d+)?\s*(photo|photos|image|images|file|files|attachment|attachments|gif|gifs|sticker|stickers)$"""
         )
+
+        /**
+         * The reply wrapper Viber puts in front of the placeholder: "Kurisu replied: sent a photo",
+         * "Kurisu replied to Edward: sent a photo". Anchored and limited to a "replied…:" opener so
+         * it can only ever strip a reply marker, never the body of a real message that has a colon
+         * in it.
+         */
+        private val REPLY_PREFIX_RE = Regex("""^replied\b[^:]{0,40}:\s*""", RegexOption.IGNORE_CASE)
 
         /**
          * True when a notification's text is a media placeholder rather than a real message —
          * singular or plural, with or without a count, and punctuation aside (the apps are not
          * consistent about the trailing full stop either).
+         *
+         * ⚠️ THE SENDER'S NAME IS SOMETIMES IN FRONT OF IT. The same group, minutes apart, produced
+         * both of these:
+         *
+         *     "Sent a photo."                             → matched, photo fetched
+         *     "Christian Rex Pielago sent a photo."        → NOT matched, photo silently ignored
+         *
+         * Messenger decides per notification whether to prefix the name, so an exact match drops
+         * roughly half of them and the app never even tries to fetch the photo — it just stores the
+         * sentence as if it were a chat message. Observed 2026-09-23 21:55, with the photo sitting
+         * on screen, fully loaded, while nothing happened.
+         *
+         * [sender] is stripped when it is actually there, rather than allowing any leading words,
+         * so an ordinary message that happens to end in "...sent a photo" is still treated as text.
          */
-        fun mediaPreview(content: String): Boolean {
-            val t = content.trim().trimEnd('.', '!', '…').lowercase()
+        fun mediaPreview(content: String, sender: String = ""): Boolean {
+            var s = content.trim().trimEnd('.', '!', '…').trim()
+            if (sender.isNotBlank() && s.startsWith(sender, ignoreCase = true)) {
+                s = s.substring(sender.length).trim()
+            }
+            // …and Viber wraps a reply around it as well: "Kurisu replied: sent a photo".
+            s = REPLY_PREFIX_RE.replace(s, "").trim()
+            val t = s.lowercase()
             return t in MEDIA_PREVIEWS || MEDIA_COUNT_RE.matches(t)
         }
     }
@@ -84,7 +119,7 @@ class NotificationListener : NotificationListenerService() {
 
         val app = if (sbn.packageName == "com.viber.voip") "VIBER" else "MESSENGER"
         val truncated = content.length >= 95
-        val imageLike = mediaPreview(content)
+        val imageLike = mediaPreview(content, sender)
 
         // Noise filters (only to decide whether to act — everything is still logged).
         val isOngoing = (n.flags and Notification.FLAG_ONGOING_EVENT) != 0
