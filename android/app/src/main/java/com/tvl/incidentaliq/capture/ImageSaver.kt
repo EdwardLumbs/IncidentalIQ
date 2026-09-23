@@ -36,7 +36,7 @@ object ImageSaver {
     private const val FILE_WAIT_MS = 6000L     // how long one photo gets to land in the gallery
     private const val FILE_POLL_MS = 250L
     private const val SETTLE_AFTER_SWIPE_MS = 900L
-    private const val MAX_PHOTOS_PER_BUBBLE = 30  // a pathological album can't hold the phone hostage
+    private const val MAX_PHOTOS_PER_BUBBLE = 40  // a pathological album can't hold the phone hostage
 
     /**
      * Save every photo in [bubble]. Returns how many made it into the queue.
@@ -72,18 +72,30 @@ object ImageSaver {
             return 0
         }
 
+        // ⚠️ THE TILE COUNT IS A FLOOR, NOT THE TOTAL. Messenger's grid shows at most 9 tiles and
+        // hides the rest behind a "+6" badge on the last one, so a 15-photo album parses as 9 —
+        // and stopping at the parsed count silently drops the remainder (Christian Manabat's 15
+        // photos came back as 9 on 2026-09-23). The viewer, however, pages through ALL of them.
+        //
+        // So the loop keeps going until the album itself ends: the swipe stops working, the viewer
+        // closes, or two pages in a row yield no new file (the last photo re-saving over itself).
+        // MAX_PHOTOS_PER_BUBBLE is the only hard stop.
         var saved = 0
-        for (seq in 1..count) {
+        var barren = 0
+        for (seq in 1..MAX_PHOTOS_PER_BUBBLE) {
             val landed = saveCurrent(svc, pkg, bubble.source, before, saved)
-            if (landed) saved++
-            else AppLog.write(TAG, "photo $seq/$count did not land in ${ImageQueue.folderFor(bubble.source).name}")
-            if (seq < count) {
-                if (!svc.swipeNext()) { AppLog.write(TAG, "swipe to next photo failed — stopping at $seq"); break }
-                Thread.sleep(SETTLE_AFTER_SWIPE_MS)
-                // A swipe that runs off the end of the album leaves the viewer, and carrying on
-                // would start saving unrelated media from further up the chat.
-                if (!viewerOpen(svc, pkg)) { AppLog.write(TAG, "viewer closed after swipe — stopping at $seq"); break }
+            if (landed) { saved++; barren = 0 } else {
+                barren++
+                AppLog.write(TAG, "photo $seq did not land in ${ImageQueue.folderFor(bubble.source).name}")
+                // Past the album's own count, an empty page means the end rather than a failure.
+                if (barren >= 2 && saved >= count) break
+                if (barren >= 3) { AppLog.write(TAG, "three pages with nothing saved — stopping"); break }
             }
+            if (!svc.swipeNext()) { AppLog.write(TAG, "swipe to next photo failed — stopping at $seq"); break }
+            Thread.sleep(SETTLE_AFTER_SWIPE_MS)
+            // A swipe that runs off the end of the album leaves the viewer, and carrying on
+            // would start saving unrelated media from further up the chat.
+            if (!viewerOpen(svc, pkg)) { AppLog.write(TAG, "viewer closed after swipe — stopping at $seq"); break }
         }
 
         returnToChat(svc, pkg)

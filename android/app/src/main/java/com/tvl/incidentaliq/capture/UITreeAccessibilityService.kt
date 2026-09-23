@@ -95,6 +95,50 @@ class UITreeAccessibilityService : AccessibilityService() {
         AppLog.write(TAG, "scrollToBottom: hit MAX_SCROLLS ($MAX_SCROLLS) cap — read may miss oldest backlog")
     }
 
+    /**
+     * Scroll the conversation ONE SCREEN towards older messages. Returns false when the list would
+     * not move — already at the top, or no scrollable list found.
+     *
+     * The counterpart to scrollToBottom(), and used only by the photo pass: a photo bubble is only
+     * capturable while it is ON SCREEN, so a read that lands at the newest message cannot see an
+     * album a few messages back. Text does not need this (the notification carries it), which is why
+     * the read cycle proper still only ever drives forward.
+     */
+    fun scrollUpOnce(): Boolean {
+        val root = rootInActiveWindow ?: run { AppLog.write(TAG, "scrollUp: no window"); return false }
+        val sig = visibleSignature(root)
+
+        // Viber exposes its conversation list as scrollable and takes the accessibility action.
+        // MESSENGER DOES NOT — its message list reports isScrollable=false, so ACTION_SCROLL_BACKWARD
+        // has nothing to act on (the same reason scrollToBottom() is a no-op there). For that case
+        // the only way to move the list is to drag it, which needs canPerformGestures in
+        // accessibility_config.xml.
+        val scroller = conversationScroller(root)
+        if (scroller != null && scroller.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)) {
+            Thread.sleep(SCROLL_SETTLE_MS)
+            if (visibleSignature(rootInActiveWindow) != sig) return true
+        }
+
+        if (!swipeDown()) { AppLog.write(TAG, "scrollUp: swipe refused"); return false }
+        Thread.sleep(SCROLL_SETTLE_MS)
+        val changed = visibleSignature(rootInActiveWindow) != sig
+        if (!changed) AppLog.write(TAG, "scrollUp: list did not move (top of conversation?)")
+        return changed
+    }
+
+    /** Drag the conversation downwards — i.e. show OLDER messages. One screen-ish per call. */
+    private fun swipeDown(): Boolean {
+        val w = resources.displayMetrics.widthPixels
+        val h = resources.displayMetrics.heightPixels
+        val x = (w * 0.5f)
+        val path = Path().apply {
+            moveTo(x, h * 0.30f)
+            lineTo(x, h * 0.80f)
+        }
+        val stroke = GestureDescription.StrokeDescription(path, 0, 300)
+        return dispatchGesture(GestureDescription.Builder().addStroke(stroke).build(), null, null)
+    }
+
     /** Photo bubbles in the chat currently on screen. Empty for anything that isn't a chat. */
     fun readImageBubbles(): List<ImageBubble> {
         val root = rootInActiveWindow ?: return emptyList()
@@ -192,16 +236,28 @@ class UITreeAccessibilityService : AccessibilityService() {
         else -> true
     }
 
-    /** Fingerprint of the currently-visible messages, so we can tell when a scroll stopped moving. */
+    /**
+     * Fingerprint of what is currently visible, so we can tell when a scroll stopped moving.
+     *
+     * ⚠️ Includes PHOTO bubbles as well as text. A screenful of nothing but photos has no message
+     * text at all, so a text-only fingerprint is the empty string — and two such screens compare
+     * equal, which reads as "the list would not move" and stops a scroll dead in the middle of an
+     * album. Exactly what happened hunting a 15-photo bubble on 2026-09-23.
+     */
     private fun visibleSignature(root: AccessibilityNodeInfo?): String {
         root ?: return ""
         val pkg = root.packageName?.toString() ?: return ""
-        val msgs = when (pkg) {
-            "com.viber.voip" -> ViberParser.parse(root)
-            "com.facebook.orca" -> MessengerParser.parse(root)
+        val text = when (pkg) {
+            "com.viber.voip" -> ViberParser.parse(root).joinToString("|") { it.content }
+            "com.facebook.orca" -> MessengerParser.parse(root).joinToString("|") { it.content }
             else -> return ""
         }
-        return msgs.joinToString("|") { it.content }
+        val photos = when (pkg) {
+            "com.viber.voip" -> ViberImageParser.parse(root, "")
+            "com.facebook.orca" -> MessengerImageParser.parse(root, "")
+            else -> emptyList()
+        }.joinToString("|") { "${it.sender}@${it.timeText}x${it.count}" }
+        return "$text##$photos"
     }
 
     /**
