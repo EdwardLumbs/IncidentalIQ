@@ -12,7 +12,7 @@ This repo's full documentation — description, architecture, **every endpoint**
 data model, configuration, integrations, deploy, and backups — is maintained in
 the **TVL-OPERATIONS** repo (the TVL ecosystem's single source of truth):
 
-- **This app:** `TVL-OPERATIONS/apps/incidentaliq.md`
+- **This app:** `TVL-OPERATIONS/apps/incidentaliq/README.md`
 - **Ecosystem map, home server, shared database:** `TVL-OPERATIONS/README.md`
 - **Answering questions about company data:** `TVL-OPERATIONS/05-investigation-handbook.md`
 
