@@ -6,6 +6,8 @@
 > this repo, run `git clone https://github.com/EdwardLumbs/TVL-OPERATIONS.git`,
 > then read its `README.md`. Pull it for DB, deploy, cross-app, or
 > data-investigation context.
+>
+> **This app's own full documentation:** `TVL-OPERATIONS/apps/incidentaliq.md`.
 
 ## Project Overview
 A system to automatically detect incidental charges discussed in client group chats across Viber and Messenger. Zero friction for clients or staff. Fully automated. Free to run.
