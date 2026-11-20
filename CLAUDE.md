@@ -1,5 +1,12 @@
 # Trip Ops Incidental Monitor
 
+> **TVL ecosystem docs.** The cross-app reference — database schema, home-server
+> access, deploy runbook, and how to answer questions about the company's data —
+> lives in a separate repo, **TVL-OPERATIONS**. If it isn't already cloned beside
+> this repo, run `git clone https://github.com/EdwardLumbs/TVL-OPERATIONS.git`,
+> then read its `README.md`. Pull it for DB, deploy, cross-app, or
+> data-investigation context.
+
 ## Project Overview
 A system to automatically detect incidental charges discussed in client group chats across Viber and Messenger. Zero friction for clients or staff. Fully automated. Free to run.
 
